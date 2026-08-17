@@ -1,0 +1,224 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ─────────────────────────────────────────────
+
+enum ListingCategory {
+  Cameras
+  PowerTools
+  Bikes
+  CampingGear
+}
+
+enum ListingStatus {
+  active
+  paused
+  pending
+  rejected
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+enum PayoutStatus {
+  pending
+  paid
+  on_hold
+}
+
+enum PickupMethod {
+  pickup
+  delivery
+}
+
+enum DisputeStatus {
+  flagged
+  under_review
+  resolved
+}
+
+enum CardBrand {
+  Visa
+  Mastercard
+}
+
+// ── Core entities ─────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  initials     String
+  // Every user can rent. isOwner flips on once they create their first
+  // listing — this replaces a renter/owner enum so one account can do both,
+  // matching the "same account, role-based" decision from the design phase.
+  isOwner       Boolean  @default(false)
+  memberSince   DateTime @default(now())
+  responseTime  String?
+
+  listings       Listing[]
+  bookings       Booking[]       @relation("RenterBookings")
+  paymentMethods PaymentMethod[]
+  messages       Message[]
+  messageThreadsAsRenter MessageThread[] @relation("RenterThreads")
+
+  @@map("users")
+}
+
+model Listing {
+  id          String          @id @default(uuid())
+  title       String
+  category    ListingCategory
+  location    String
+  pricePerDay Decimal         @db.Decimal(10, 2)
+  description String          @db.Text
+  status      ListingStatus   @default(pending)
+  createdAt   DateTime        @default(now())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  bookings Booking[]
+  threads  MessageThread[]
+
+  // Note: mock data's unavailableDaysOfMonth is gone entirely. Availability
+  // is now derived by querying confirmed Bookings whose date range overlaps
+  // the requested dates — a stored list would drift out of sync with actual
+  // bookings the moment one is cancelled or added.
+
+  @@map("listings")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  requestNumber String        @unique @default(cuid())
+  status        BookingStatus @default(pending)
+  startDate     DateTime      @db.Date
+  endDate       DateTime      @db.Date
+  pickupMethod  PickupMethod
+  payoutStatus  PayoutStatus?
+  createdAt     DateTime      @default(now())
+
+  // Pricing snapshot at time of booking — stored, not recomputed, since
+  // Listing.pricePerDay can change later and a past booking's receipt
+  // shouldn't retroactively change with it.
+  pricePerDayAtBooking Decimal @db.Decimal(10, 2)
+  nights               Int
+  subtotal             Decimal @db.Decimal(10, 2)
+  serviceFee           Decimal @db.Decimal(10, 2)
+  tax                  Decimal @db.Decimal(10, 2)
+  total                Decimal @db.Decimal(10, 2)
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  renterId String
+  renter   User   @relation("RenterBookings", fields: [renterId], references: [id])
+
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  dispute Dispute?
+
+  // TODO before going live: Postgres can't enforce "no overlapping date
+  // ranges per listing" through Prisma alone — that needs a raw SQL
+  // migration adding an EXCLUDE constraint (via the btree_gist extension)
+  // on (listingId, daterange(startDate, endDate)). Until that migration
+  // exists, this check has to happen in the booking service, not the DB.
+
+  @@map("bookings")
+}
+
+model PaymentMethod {
+  id       String    @id @default(uuid())
+  brand    CardBrand
+  last4    String
+  expires  String
+  // Stripe (or whichever processor) token — the actual card number/CVV
+  // never touches this database. last4/expires are just what Stripe
+  // returns for display; this field is what actually charges the card.
+  processorPaymentMethodId String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  bookings Booking[]
+
+  @@map("payment_methods")
+}
+
+model MessageThread {
+  id       String   @id @default(uuid())
+  unreadForRenter Boolean @default(false)
+  unreadForOwner  Boolean @default(false)
+  createdAt       DateTime @default(now())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  renterId String
+  renter   User   @relation("RenterThreads", fields: [renterId], references: [id])
+  // Owner is intentionally not a separate FK here — it's always
+  // listing.owner. Storing it again would let it silently drift if a
+  // listing ever changed hands.
+
+  messages Message[]
+
+  @@map("message_threads")
+}
+
+model Message {
+  id     String   @id @default(uuid())
+  text   String   @db.Text
+  sentAt DateTime @default(now())
+
+  threadId String
+  thread   MessageThread @relation(fields: [threadId], references: [id])
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+  // Whether the sender was acting as "renter" or "owner" for this message
+  // is derived by comparing senderId to thread.renterId vs listing.ownerId
+  // — not stored, since it's fully computable and storing it risks drift.
+
+  @@map("messages")
+}
+
+model Dispute {
+  id     String        @id @default(uuid())
+  status DisputeStatus @default(flagged)
+  detail String        @db.Text
+
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  // Replaces the old free-text "parties" field — renter, owner, and
+  // listing are all reachable through booking.renter and
+  // booking.listing.owner instead of being duplicated as text.
+
+  @@map("disputes")
+}
+
+// ── Staff / admin (separate auth domain) ──────────────
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  initials     String
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}

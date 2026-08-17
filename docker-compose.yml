@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: rental-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rental
+      POSTGRES_PASSWORD: rental_dev_password
+      POSTGRES_DB: rental_marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - rental_pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rental-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@local.test
+      PGADMIN_DEFAULT_PASSWORD: pgadmin_dev_password
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  rental_pgdata:
