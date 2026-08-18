@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ListingStatus } from '../../generated/prisma/enums';
 
 @Injectable()
 export class AdminService {
@@ -17,9 +18,25 @@ export class AdminService {
       include: { listing: true, renter: true },
       orderBy: { createdAt: 'desc' },
     });
-    return bookings.map(({ renter: { passwordHash: _passwordHash, ...renter }, ...booking }) => ({
-      ...booking,
-      renter,
-    }));
+    return bookings.map(
+      ({ renter: { passwordHash: _passwordHash, ...renter }, ...booking }) => ({
+        ...booking,
+        renter,
+      }),
+    );
+  }
+
+  async findAllListings(status?: ListingStatus) {
+    const listings = await this.prisma.listing.findMany({
+      where: status ? { status } : undefined,
+      include: { owner: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return listings.map(
+      ({ owner: { passwordHash: _passwordHash, ...owner }, ...listing }) => ({
+        ...listing,
+        owner,
+      }),
+    );
   }
 }
