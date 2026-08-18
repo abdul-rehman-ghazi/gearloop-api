@@ -41,6 +41,12 @@ let ListingsController = class ListingsController {
     pause(user, id) {
         return this.listingsService.pause(id, user.userId);
     }
+    activate(user, id) {
+        return this.listingsService.activate(id, user.userId);
+    }
+    remove(user, id) {
+        return this.listingsService.remove(id, user.userId);
+    }
 };
 exports.ListingsController = ListingsController;
 __decorate([
@@ -87,6 +93,25 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], ListingsController.prototype, "pause", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_user_auth_guard_1.JwtUserAuthGuard),
+    (0, common_1.Patch)(':id/activate'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], ListingsController.prototype, "activate", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_user_auth_guard_1.JwtUserAuthGuard),
+    (0, common_1.Delete)(':id'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], ListingsController.prototype, "remove", null);
 exports.ListingsController = ListingsController = __decorate([
     (0, common_1.Controller)('listings'),
     __metadata("design:paramtypes", [listings_service_1.ListingsService])

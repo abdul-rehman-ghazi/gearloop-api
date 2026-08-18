@@ -35,7 +35,7 @@ let UsersService = class UsersService {
     }
     async findPublicProfile(id) {
         const user = await this.findByIdOrThrow(id);
-        const { id: userId, name, initials, isOwner, memberSince, responseTime } = user;
+        const { id: userId, name, initials, isOwner, memberSince, responseTime, } = user;
         return { id: userId, name, initials, isOwner, memberSince, responseTime };
     }
     async findByIdOrThrow(id) {

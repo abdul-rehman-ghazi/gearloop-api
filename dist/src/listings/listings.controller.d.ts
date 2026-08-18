@@ -61,4 +61,16 @@ export declare class ListingsController {
         createdAt: Date;
         ownerId: string;
     }>;
+    activate(user: UserAuthContext, id: string): Promise<{
+        id: string;
+        title: string;
+        category: import("../../generated/prisma/enums").ListingCategory;
+        location: string;
+        pricePerDay: import("@prisma/client-runtime-utils").Decimal;
+        description: string;
+        status: import("../../generated/prisma/enums").ListingStatus;
+        createdAt: Date;
+        ownerId: string;
+    }>;
+    remove(user: UserAuthContext, id: string): Promise<void>;
 }

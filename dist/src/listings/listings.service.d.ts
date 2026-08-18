@@ -60,6 +60,18 @@ export declare class ListingsService {
         createdAt: Date;
         ownerId: string;
     }>;
+    remove(id: string, ownerId: string): Promise<void>;
+    activate(id: string, ownerId: string): Promise<{
+        id: string;
+        title: string;
+        category: import("../../generated/prisma/enums").ListingCategory;
+        location: string;
+        pricePerDay: import("@prisma/client-runtime-utils").Decimal;
+        description: string;
+        status: import("../../generated/prisma/enums").ListingStatus;
+        createdAt: Date;
+        ownerId: string;
+    }>;
     approve(id: string): Promise<{
         id: string;
         title: string;

@@ -30,6 +30,9 @@ let BookingsController = class BookingsController {
     findByUser(user) {
         return this.bookingsService.findByUser(user.userId);
     }
+    findByOwner(user) {
+        return this.bookingsService.findByOwner(user.userId);
+    }
     findById(id) {
         return this.bookingsService.findById(id);
     }
@@ -53,6 +56,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], BookingsController.prototype, "findByUser", null);
+__decorate([
+    (0, common_1.Get)('owner'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], BookingsController.prototype, "findByOwner", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

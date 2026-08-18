@@ -1,4 +1,5 @@
 import { AdminService } from './admin.service';
+import { ListingStatus } from '../../generated/prisma/enums';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
@@ -28,7 +29,7 @@ export declare class AdminController {
             location: string;
             pricePerDay: import("@prisma/client-runtime-utils").Decimal;
             description: string;
-            status: import("../../generated/prisma/enums").ListingStatus;
+            status: ListingStatus;
             createdAt: Date;
             ownerId: string;
         };
@@ -49,5 +50,25 @@ export declare class AdminController {
         listingId: string;
         renterId: string;
         paymentMethodId: string;
+    }[]>;
+    findAllListings(status?: ListingStatus): Promise<{
+        owner: {
+            id: string;
+            name: string;
+            email: string;
+            initials: string;
+            isOwner: boolean;
+            memberSince: Date;
+            responseTime: string | null;
+        };
+        id: string;
+        title: string;
+        category: import("../../generated/prisma/enums").ListingCategory;
+        location: string;
+        pricePerDay: import("@prisma/client-runtime-utils").Decimal;
+        description: string;
+        status: ListingStatus;
+        createdAt: Date;
+        ownerId: string;
     }[]>;
 }

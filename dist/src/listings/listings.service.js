@@ -48,7 +48,10 @@ let ListingsService = class ListingsService {
                 },
             };
         }
-        return this.prisma.listing.findMany({ where, orderBy: { createdAt: 'desc' } });
+        return this.prisma.listing.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+        });
     }
     async findById(id) {
         const listing = await this.prisma.listing.findUnique({ where: { id } });
@@ -65,6 +68,23 @@ let ListingsService = class ListingsService {
         return this.prisma.listing.update({
             where: { id },
             data: { status: 'paused' },
+        });
+    }
+    async remove(id, ownerId) {
+        await this.assertOwnership(id, ownerId);
+        const activeBooking = await this.prisma.booking.findFirst({
+            where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
+        });
+        if (activeBooking) {
+            throw new common_1.ConflictException('This listing has an active booking and cannot be deleted');
+        }
+        await this.prisma.listing.delete({ where: { id } });
+    }
+    async activate(id, ownerId) {
+        await this.assertOwnership(id, ownerId);
+        return this.prisma.listing.update({
+            where: { id },
+            data: { status: 'active' },
         });
     }
     async approve(id) {

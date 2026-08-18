@@ -33,6 +33,17 @@ let AdminService = class AdminService {
             renter,
         }));
     }
+    async findAllListings(status) {
+        const listings = await this.prisma.listing.findMany({
+            where: status ? { status } : undefined,
+            include: { owner: true },
+            orderBy: { createdAt: 'desc' },
+        });
+        return listings.map(({ owner: { passwordHash: _passwordHash, ...owner }, ...listing }) => ({
+            ...listing,
+            owner,
+        }));
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([

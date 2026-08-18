@@ -75,6 +75,13 @@ let BookingsService = class BookingsService {
             orderBy: { createdAt: 'desc' },
         });
     }
+    findByOwner(ownerId) {
+        return this.prisma.booking.findMany({
+            where: { listing: { ownerId } },
+            include: { listing: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
     async updateStatus(id, dto) {
         await this.findById(id);
         if (dto.status === 'confirmed') {
@@ -112,8 +119,7 @@ let BookingsService = class BookingsService {
     }
     isExclusionViolation(err) {
         const meta = err?.meta;
-        const code = meta?.code ??
-            err?.code;
+        const code = meta?.code ?? err?.code;
         const message = err?.message ?? '';
         return (code === '23P01' ||
             message.includes('23P01') ||

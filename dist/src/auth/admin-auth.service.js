@@ -76,7 +76,11 @@ let AdminAuthService = class AdminAuthService {
             },
         });
         return {
-            accessToken: this.signToken({ sub: admin.id, email: admin.email, type: 'admin' }),
+            accessToken: this.signToken({
+                sub: admin.id,
+                email: admin.email,
+                type: 'admin',
+            }),
             admin: this.sanitize(admin),
         };
     }
@@ -90,7 +94,11 @@ let AdminAuthService = class AdminAuthService {
         if (!passwordMatches)
             throw new common_1.UnauthorizedException('Invalid credentials');
         return {
-            accessToken: this.signToken({ sub: admin.id, email: admin.email, type: 'admin' }),
+            accessToken: this.signToken({
+                sub: admin.id,
+                email: admin.email,
+                type: 'admin',
+            }),
             admin: this.sanitize(admin),
         };
     }
