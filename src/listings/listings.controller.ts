@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -55,5 +58,18 @@ export class ListingsController {
   @Patch(':id/pause')
   pause(@CurrentUser() user: UserAuthContext, @Param('id') id: string) {
     return this.listingsService.pause(id, user.userId);
+  }
+
+  @UseGuards(JwtUserAuthGuard)
+  @Patch(':id/activate')
+  activate(@CurrentUser() user: UserAuthContext, @Param('id') id: string) {
+    return this.listingsService.activate(id, user.userId);
+  }
+
+  @UseGuards(JwtUserAuthGuard)
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: UserAuthContext, @Param('id') id: string) {
+    return this.listingsService.remove(id, user.userId);
   }
 }

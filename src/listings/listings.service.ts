@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
@@ -47,7 +52,10 @@ export class ListingsService {
       };
     }
 
-    return this.prisma.listing.findMany({ where, orderBy: { createdAt: 'desc' } });
+    return this.prisma.listing.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findById(id: string) {
@@ -66,6 +74,29 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: { status: 'paused' },
+    });
+  }
+
+  async remove(id: string, ownerId: string) {
+    await this.assertOwnership(id, ownerId);
+
+    const activeBooking = await this.prisma.booking.findFirst({
+      where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
+    });
+    if (activeBooking) {
+      throw new ConflictException(
+        'This listing has an active booking and cannot be deleted',
+      );
+    }
+
+    await this.prisma.listing.delete({ where: { id } });
+  }
+
+  async activate(id: string, ownerId: string) {
+    await this.assertOwnership(id, ownerId);
+    return this.prisma.listing.update({
+      where: { id },
+      data: { status: 'active' },
     });
   }
 
