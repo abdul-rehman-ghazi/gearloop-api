@@ -60,7 +60,8 @@ export class AuthService {
       dto.password,
       user.passwordHash,
     );
-    if (!passwordMatches) throw new UnauthorizedException('Invalid credentials');
+    if (!passwordMatches)
+      throw new UnauthorizedException('Invalid credentials');
 
     return {
       accessToken: this.signToken({

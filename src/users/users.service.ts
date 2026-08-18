@@ -28,8 +28,14 @@ export class UsersService {
     const user = await this.findByIdOrThrow(id);
     // Public view: no email, no passwordHash — only what's safe to show a
     // stranger browsing a listing.
-    const { id: userId, name, initials, isOwner, memberSince, responseTime } =
-      user;
+    const {
+      id: userId,
+      name,
+      initials,
+      isOwner,
+      memberSince,
+      responseTime,
+    } = user;
     return { id: userId, name, initials, isOwner, memberSince, responseTime };
   }
 

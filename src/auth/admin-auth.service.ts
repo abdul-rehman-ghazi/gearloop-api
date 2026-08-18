@@ -25,7 +25,9 @@ export class AdminAuthService {
       where: { email: dto.email },
     });
     if (existing) {
-      throw new ConflictException('An admin account with this email already exists');
+      throw new ConflictException(
+        'An admin account with this email already exists',
+      );
     }
 
     const saltRounds = Number(this.config.get('BCRYPT_SALT_ROUNDS', 10));
@@ -41,7 +43,11 @@ export class AdminAuthService {
     });
 
     return {
-      accessToken: this.signToken({ sub: admin.id, email: admin.email, type: 'admin' }),
+      accessToken: this.signToken({
+        sub: admin.id,
+        email: admin.email,
+        type: 'admin',
+      }),
       admin: this.sanitize(admin),
     };
   }
@@ -56,10 +62,15 @@ export class AdminAuthService {
       dto.password,
       admin.passwordHash,
     );
-    if (!passwordMatches) throw new UnauthorizedException('Invalid credentials');
+    if (!passwordMatches)
+      throw new UnauthorizedException('Invalid credentials');
 
     return {
-      accessToken: this.signToken({ sub: admin.id, email: admin.email, type: 'admin' }),
+      accessToken: this.signToken({
+        sub: admin.id,
+        email: admin.email,
+        type: 'admin',
+      }),
       admin: this.sanitize(admin),
     };
   }

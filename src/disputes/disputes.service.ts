@@ -19,9 +19,7 @@ export class DisputesService {
     });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.renterId !== userId && booking.listing.ownerId !== userId) {
-      throw new ForbiddenException(
-        'You are not a party to this booking',
-      );
+      throw new ForbiddenException('You are not a party to this booking');
     }
 
     const existing = await this.prisma.dispute.findUnique({
