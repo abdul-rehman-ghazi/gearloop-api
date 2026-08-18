@@ -91,6 +91,14 @@ export class BookingsService {
     });
   }
 
+  findByOwner(ownerId: string) {
+    return this.prisma.booking.findMany({
+      where: { listing: { ownerId } },
+      include: { listing: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async updateStatus(id: string, dto: UpdateBookingStatusDto) {
     await this.findById(id);
 
@@ -146,8 +154,7 @@ export class BookingsService {
   private isExclusionViolation(err: unknown): boolean {
     const meta = (err as { meta?: Record<string, unknown> })?.meta;
     const code =
-      (meta?.code as string | undefined) ??
-      (err as { code?: string })?.code;
+      (meta?.code as string | undefined) ?? (err as { code?: string })?.code;
     const message = (err as { message?: string })?.message ?? '';
 
     return (
