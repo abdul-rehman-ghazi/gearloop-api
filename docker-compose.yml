@@ -17,7 +17,7 @@ services:
     container_name: rental-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: dev@local.test
+      PGADMIN_DEFAULT_EMAIL: dev@example.com
       PGADMIN_DEFAULT_PASSWORD: pgadmin_dev_password
     ports:
       - "5050:80"
