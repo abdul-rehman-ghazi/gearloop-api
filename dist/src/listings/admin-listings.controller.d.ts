@@ -4,6 +4,8 @@ export declare class AdminListingsController {
     constructor(listingsService: ListingsService);
     approve(id: string): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -11,11 +13,12 @@ export declare class AdminListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     reject(id: string): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -23,7 +26,6 @@ export declare class AdminListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
 }

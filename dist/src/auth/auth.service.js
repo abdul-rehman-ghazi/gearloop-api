@@ -88,8 +88,9 @@ let AuthService = class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
-        if (!user)
+        if (!user || user.deletedAt) {
             throw new common_1.UnauthorizedException('Invalid credentials');
+        }
         const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
         if (!passwordMatches)
             throw new common_1.UnauthorizedException('Invalid credentials');

@@ -7,14 +7,15 @@ export declare class DisputesService {
     create(userId: string, dto: CreateDisputeDto): Promise<{
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
     findAllForUser(userId: string): Promise<({
         booking: {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -33,13 +34,15 @@ export declare class DisputesService {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     })[]>;
     findById(id: string, userId?: string): Promise<{
         booking: {
             listing: {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -47,13 +50,13 @@ export declare class DisputesService {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -72,31 +75,34 @@ export declare class DisputesService {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
     updateStatus(id: string, dto: UpdateDisputeStatusDto): Promise<{
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
     findAllForAdmin(): Promise<({
         booking: {
             listing: {
                 owner: {
                     id: string;
-                    name: string;
                     email: string;
+                    name: string;
                     passwordHash: string;
                     initials: string;
                     isOwner: boolean;
                     isSuspended: boolean;
                     memberSince: Date;
                     responseTime: string | null;
+                    deletedAt: Date | null;
                 };
             } & {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -104,24 +110,25 @@ export declare class DisputesService {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
             renter: {
                 id: string;
-                name: string;
                 email: string;
+                name: string;
                 passwordHash: string;
                 initials: string;
                 isOwner: boolean;
                 isSuspended: boolean;
                 memberSince: Date;
                 responseTime: string | null;
+                deletedAt: Date | null;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -140,8 +147,8 @@ export declare class DisputesService {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     } & {
         booking: {
             renter: {
@@ -159,17 +166,20 @@ export declare class DisputesService {
             listing: {
                 owner: {
                     id: string;
-                    name: string;
                     email: string;
+                    name: string;
                     passwordHash: string;
                     initials: string;
                     isOwner: boolean;
                     isSuspended: boolean;
                     memberSince: Date;
                     responseTime: string | null;
+                    deletedAt: Date | null;
                 };
             } & {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -177,24 +187,25 @@ export declare class DisputesService {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
             renter: {
                 id: string;
-                name: string;
                 email: string;
+                name: string;
                 passwordHash: string;
                 initials: string;
                 isOwner: boolean;
                 isSuspended: boolean;
                 memberSince: Date;
                 responseTime: string | null;
+                deletedAt: Date | null;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -213,8 +224,8 @@ export declare class DisputesService {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     } & {
         booking: {
             renter: {

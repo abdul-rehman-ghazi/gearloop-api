@@ -8,17 +8,20 @@ export declare class AdminDisputesController {
             listing: {
                 owner: {
                     id: string;
-                    name: string;
                     email: string;
+                    name: string;
                     passwordHash: string;
                     initials: string;
                     isOwner: boolean;
                     isSuspended: boolean;
                     memberSince: Date;
                     responseTime: string | null;
+                    deletedAt: Date | null;
                 };
             } & {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -26,24 +29,25 @@ export declare class AdminDisputesController {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
             renter: {
                 id: string;
-                name: string;
                 email: string;
+                name: string;
                 passwordHash: string;
                 initials: string;
                 isOwner: boolean;
                 isSuspended: boolean;
                 memberSince: Date;
                 responseTime: string | null;
+                deletedAt: Date | null;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -62,8 +66,8 @@ export declare class AdminDisputesController {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     } & {
         booking: {
             renter: {
@@ -81,17 +85,20 @@ export declare class AdminDisputesController {
             listing: {
                 owner: {
                     id: string;
-                    name: string;
                     email: string;
+                    name: string;
                     passwordHash: string;
                     initials: string;
                     isOwner: boolean;
                     isSuspended: boolean;
                     memberSince: Date;
                     responseTime: string | null;
+                    deletedAt: Date | null;
                 };
             } & {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -99,24 +106,25 @@ export declare class AdminDisputesController {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
             renter: {
                 id: string;
-                name: string;
                 email: string;
+                name: string;
                 passwordHash: string;
                 initials: string;
                 isOwner: boolean;
                 isSuspended: boolean;
                 memberSince: Date;
                 responseTime: string | null;
+                deletedAt: Date | null;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -135,8 +143,8 @@ export declare class AdminDisputesController {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     } & {
         booking: {
             renter: {
@@ -152,7 +160,7 @@ export declare class AdminDisputesController {
     updateStatus(id: string, dto: UpdateDisputeStatusDto): Promise<{
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
 }

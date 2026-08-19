@@ -6,8 +6,9 @@ export declare class BookingsService {
     constructor(prisma: PrismaService);
     create(renterId: string, dto: CreateBookingDto): Promise<{
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;
@@ -25,8 +26,9 @@ export declare class BookingsService {
     }>;
     findById(id: string): Promise<{
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;
@@ -44,8 +46,9 @@ export declare class BookingsService {
     }>;
     findByUser(renterId: string): import("../../generated/prisma/internal/prismaNamespace").PrismaPromise<{
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;
@@ -64,6 +67,8 @@ export declare class BookingsService {
     findByOwner(ownerId: string): import("../../generated/prisma/internal/prismaNamespace").PrismaPromise<({
         listing: {
             id: string;
+            deletedAt: Date | null;
+            createdAt: Date;
             title: string;
             category: import("../../generated/prisma/enums").ListingCategory;
             location: string;
@@ -71,13 +76,13 @@ export declare class BookingsService {
             description: string;
             images: string[];
             status: import("../../generated/prisma/enums").ListingStatus;
-            createdAt: Date;
             ownerId: string;
         };
     } & {
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;
@@ -95,8 +100,9 @@ export declare class BookingsService {
     })[]>;
     updateStatus(id: string, dto: UpdateBookingStatusDto): Promise<{
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;

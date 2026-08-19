@@ -7,14 +7,15 @@ export declare class DisputesController {
     create(user: UserAuthContext, dto: CreateDisputeDto): Promise<{
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
     findAll(user: UserAuthContext): Promise<({
         booking: {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -33,13 +34,15 @@ export declare class DisputesController {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     })[]>;
     findById(user: UserAuthContext, id: string): Promise<{
         booking: {
             listing: {
                 id: string;
+                deletedAt: Date | null;
+                createdAt: Date;
                 title: string;
                 category: import("../../generated/prisma/enums").ListingCategory;
                 location: string;
@@ -47,13 +50,13 @@ export declare class DisputesController {
                 description: string;
                 images: string[];
                 status: import("../../generated/prisma/enums").ListingStatus;
-                createdAt: Date;
                 ownerId: string;
             };
         } & {
             id: string;
-            status: import("../../generated/prisma/enums").BookingStatus;
+            deletedAt: Date | null;
             createdAt: Date;
+            status: import("../../generated/prisma/enums").BookingStatus;
             requestNumber: string;
             startDate: Date;
             endDate: Date;
@@ -72,7 +75,7 @@ export declare class DisputesController {
     } & {
         id: string;
         status: import("../../generated/prisma/enums").DisputeStatus;
-        detail: string;
         bookingId: string;
+        detail: string;
     }>;
 }

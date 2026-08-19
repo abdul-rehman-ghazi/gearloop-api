@@ -817,6 +817,7 @@ export declare const UserScalarFieldEnum: {
     readonly isSuspended: "isSuspended";
     readonly memberSince: "memberSince";
     readonly responseTime: "responseTime";
+    readonly deletedAt: "deletedAt";
 };
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum];
 export declare const ListingScalarFieldEnum: {
@@ -829,6 +830,7 @@ export declare const ListingScalarFieldEnum: {
     readonly images: "images";
     readonly status: "status";
     readonly createdAt: "createdAt";
+    readonly deletedAt: "deletedAt";
     readonly ownerId: "ownerId";
 };
 export type ListingScalarFieldEnum = (typeof ListingScalarFieldEnum)[keyof typeof ListingScalarFieldEnum];
@@ -841,6 +843,7 @@ export declare const BookingScalarFieldEnum: {
     readonly pickupMethod: "pickupMethod";
     readonly payoutStatus: "payoutStatus";
     readonly createdAt: "createdAt";
+    readonly deletedAt: "deletedAt";
     readonly pricePerDayAtBooking: "pricePerDayAtBooking";
     readonly nights: "nights";
     readonly subtotal: "subtotal";

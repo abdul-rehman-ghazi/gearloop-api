@@ -29,6 +29,7 @@ let ListingsService = class ListingsService {
     }
     async findAll(dto, callerUserId) {
         const where = {
+            deletedAt: null,
             ...(callerUserId
                 ? { OR: [{ status: 'active' }, { ownerId: callerUserId }] }
                 : { status: 'active' }),
@@ -55,14 +56,15 @@ let ListingsService = class ListingsService {
     }
     async findById(id) {
         const listing = await this.prisma.listing.findUnique({ where: { id } });
-        if (!listing)
+        if (!listing || listing.deletedAt) {
             throw new common_1.NotFoundException('Listing not found');
+        }
         return listing;
     }
     async getBookedRanges(id) {
         await this.findById(id);
         return this.prisma.booking.findMany({
-            where: { listingId: id, status: 'confirmed' },
+            where: { listingId: id, status: 'confirmed', deletedAt: null },
             select: { startDate: true, endDate: true },
         });
     }

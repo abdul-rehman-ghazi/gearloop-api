@@ -40,7 +40,7 @@ let UsersService = class UsersService {
     }
     async findByIdOrThrow(id) {
         const user = await this.prisma.user.findUnique({ where: { id } });
-        if (!user)
+        if (!user || user.deletedAt)
             throw new common_1.NotFoundException('User not found');
         return user;
     }

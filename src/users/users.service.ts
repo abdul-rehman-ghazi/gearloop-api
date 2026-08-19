@@ -41,7 +41,7 @@ export class UsersService {
 
   private async findByIdOrThrow(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user || user.deletedAt) throw new NotFoundException('User not found');
     return user;
   }
 

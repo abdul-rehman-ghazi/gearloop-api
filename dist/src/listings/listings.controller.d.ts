@@ -8,6 +8,8 @@ export declare class ListingsController {
     constructor(listingsService: ListingsService);
     create(user: UserAuthContext, dto: CreateListingDto): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -15,11 +17,12 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     findAll(dto: SearchListingsDto, user?: UserAuthContext): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -27,7 +30,6 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }[]>;
     getBookedRanges(id: string): Promise<{
@@ -36,6 +38,8 @@ export declare class ListingsController {
     }[]>;
     findById(id: string): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -43,11 +47,12 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     update(user: UserAuthContext, id: string, dto: UpdateListingDto): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -55,11 +60,12 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     pause(user: UserAuthContext, id: string): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -67,11 +73,12 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     activate(user: UserAuthContext, id: string): Promise<{
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -79,7 +86,6 @@ export declare class ListingsController {
         description: string;
         images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     remove(user: UserAuthContext, id: string): Promise<void>;

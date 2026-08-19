@@ -1,6 +1,6 @@
-import type * as runtime from "@prisma/client/runtime/client";
-import type * as $Enums from "../enums.js";
-import type * as Prisma from "../internal/prismaNamespace.js";
+import type * as runtime from '@prisma/client/runtime/client';
+import type * as $Enums from '../enums.js';
+import type * as Prisma from '../internal/prismaNamespace.js';
 export type BookingModel = runtime.Types.Result.DefaultSelection<Prisma.$BookingPayload>;
 export type AggregateBooking = {
     _count: BookingCountAggregateOutputType | null;
@@ -34,6 +34,7 @@ export type BookingMinAggregateOutputType = {
     pickupMethod: $Enums.PickupMethod | null;
     payoutStatus: $Enums.PayoutStatus | null;
     createdAt: Date | null;
+    deletedAt: Date | null;
     pricePerDayAtBooking: runtime.Decimal | null;
     nights: number | null;
     subtotal: runtime.Decimal | null;
@@ -53,6 +54,7 @@ export type BookingMaxAggregateOutputType = {
     pickupMethod: $Enums.PickupMethod | null;
     payoutStatus: $Enums.PayoutStatus | null;
     createdAt: Date | null;
+    deletedAt: Date | null;
     pricePerDayAtBooking: runtime.Decimal | null;
     nights: number | null;
     subtotal: runtime.Decimal | null;
@@ -72,6 +74,7 @@ export type BookingCountAggregateOutputType = {
     pickupMethod: number;
     payoutStatus: number;
     createdAt: number;
+    deletedAt: number;
     pricePerDayAtBooking: number;
     nights: number;
     subtotal: number;
@@ -108,6 +111,7 @@ export type BookingMinAggregateInputType = {
     pickupMethod?: true;
     payoutStatus?: true;
     createdAt?: true;
+    deletedAt?: true;
     pricePerDayAtBooking?: true;
     nights?: true;
     subtotal?: true;
@@ -127,6 +131,7 @@ export type BookingMaxAggregateInputType = {
     pickupMethod?: true;
     payoutStatus?: true;
     createdAt?: true;
+    deletedAt?: true;
     pricePerDayAtBooking?: true;
     nights?: true;
     subtotal?: true;
@@ -146,6 +151,7 @@ export type BookingCountAggregateInputType = {
     pickupMethod?: true;
     payoutStatus?: true;
     createdAt?: true;
+    deletedAt?: true;
     pricePerDayAtBooking?: true;
     nights?: true;
     subtotal?: true;
@@ -194,6 +200,7 @@ export type BookingGroupByOutputType = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus: $Enums.PayoutStatus | null;
     createdAt: Date;
+    deletedAt: Date | null;
     pricePerDayAtBooking: runtime.Decimal;
     nights: number;
     subtotal: runtime.Decimal;
@@ -210,29 +217,30 @@ export type BookingGroupByOutputType = {
     _max: BookingMaxAggregateOutputType | null;
 };
 export type GetBookingGroupByPayload<T extends BookingGroupByArgs> = Prisma.PrismaPromise<Array<Prisma.PickEnumerable<BookingGroupByOutputType, T['by']> & {
-    [P in ((keyof T) & (keyof BookingGroupByOutputType))]: P extends '_count' ? T[P] extends boolean ? number : Prisma.GetScalarType<T[P], BookingGroupByOutputType[P]> : Prisma.GetScalarType<T[P], BookingGroupByOutputType[P]>;
+    [P in keyof T & keyof BookingGroupByOutputType]: P extends '_count' ? T[P] extends boolean ? number : Prisma.GetScalarType<T[P], BookingGroupByOutputType[P]> : Prisma.GetScalarType<T[P], BookingGroupByOutputType[P]>;
 }>>;
 export type BookingWhereInput = {
     AND?: Prisma.BookingWhereInput | Prisma.BookingWhereInput[];
     OR?: Prisma.BookingWhereInput[];
     NOT?: Prisma.BookingWhereInput | Prisma.BookingWhereInput[];
-    id?: Prisma.StringFilter<"Booking"> | string;
-    requestNumber?: Prisma.StringFilter<"Booking"> | string;
-    status?: Prisma.EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus;
-    startDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    endDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pickupMethod?: Prisma.EnumPickupMethodFilter<"Booking"> | $Enums.PickupMethod;
-    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<"Booking"> | $Enums.PayoutStatus | null;
-    createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pricePerDayAtBooking?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    nights?: Prisma.IntFilter<"Booking"> | number;
-    subtotal?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    serviceFee?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    tax?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    total?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    listingId?: Prisma.StringFilter<"Booking"> | string;
-    renterId?: Prisma.StringFilter<"Booking"> | string;
-    paymentMethodId?: Prisma.StringFilter<"Booking"> | string;
+    id?: Prisma.StringFilter<'Booking'> | string;
+    requestNumber?: Prisma.StringFilter<'Booking'> | string;
+    status?: Prisma.EnumBookingStatusFilter<'Booking'> | $Enums.BookingStatus;
+    startDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    endDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    pickupMethod?: Prisma.EnumPickupMethodFilter<'Booking'> | $Enums.PickupMethod;
+    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<'Booking'> | $Enums.PayoutStatus | null;
+    createdAt?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<'Booking'> | Date | string | null;
+    pricePerDayAtBooking?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    nights?: Prisma.IntFilter<'Booking'> | number;
+    subtotal?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    serviceFee?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    tax?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    total?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    listingId?: Prisma.StringFilter<'Booking'> | string;
+    renterId?: Prisma.StringFilter<'Booking'> | string;
+    paymentMethodId?: Prisma.StringFilter<'Booking'> | string;
     listing?: Prisma.XOR<Prisma.ListingScalarRelationFilter, Prisma.ListingWhereInput>;
     renter?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     paymentMethod?: Prisma.XOR<Prisma.PaymentMethodScalarRelationFilter, Prisma.PaymentMethodWhereInput>;
@@ -247,6 +255,7 @@ export type BookingOrderByWithRelationInput = {
     pickupMethod?: Prisma.SortOrder;
     payoutStatus?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     pricePerDayAtBooking?: Prisma.SortOrder;
     nights?: Prisma.SortOrder;
     subtotal?: Prisma.SortOrder;
@@ -267,26 +276,27 @@ export type BookingWhereUniqueInput = Prisma.AtLeast<{
     AND?: Prisma.BookingWhereInput | Prisma.BookingWhereInput[];
     OR?: Prisma.BookingWhereInput[];
     NOT?: Prisma.BookingWhereInput | Prisma.BookingWhereInput[];
-    status?: Prisma.EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus;
-    startDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    endDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pickupMethod?: Prisma.EnumPickupMethodFilter<"Booking"> | $Enums.PickupMethod;
-    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<"Booking"> | $Enums.PayoutStatus | null;
-    createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pricePerDayAtBooking?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    nights?: Prisma.IntFilter<"Booking"> | number;
-    subtotal?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    serviceFee?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    tax?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    total?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    listingId?: Prisma.StringFilter<"Booking"> | string;
-    renterId?: Prisma.StringFilter<"Booking"> | string;
-    paymentMethodId?: Prisma.StringFilter<"Booking"> | string;
+    status?: Prisma.EnumBookingStatusFilter<'Booking'> | $Enums.BookingStatus;
+    startDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    endDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    pickupMethod?: Prisma.EnumPickupMethodFilter<'Booking'> | $Enums.PickupMethod;
+    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<'Booking'> | $Enums.PayoutStatus | null;
+    createdAt?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<'Booking'> | Date | string | null;
+    pricePerDayAtBooking?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    nights?: Prisma.IntFilter<'Booking'> | number;
+    subtotal?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    serviceFee?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    tax?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    total?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    listingId?: Prisma.StringFilter<'Booking'> | string;
+    renterId?: Prisma.StringFilter<'Booking'> | string;
+    paymentMethodId?: Prisma.StringFilter<'Booking'> | string;
     listing?: Prisma.XOR<Prisma.ListingScalarRelationFilter, Prisma.ListingWhereInput>;
     renter?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     paymentMethod?: Prisma.XOR<Prisma.PaymentMethodScalarRelationFilter, Prisma.PaymentMethodWhereInput>;
     dispute?: Prisma.XOR<Prisma.DisputeNullableScalarRelationFilter, Prisma.DisputeWhereInput> | null;
-}, "id" | "requestNumber">;
+}, 'id' | 'requestNumber'>;
 export type BookingOrderByWithAggregationInput = {
     id?: Prisma.SortOrder;
     requestNumber?: Prisma.SortOrder;
@@ -296,6 +306,7 @@ export type BookingOrderByWithAggregationInput = {
     pickupMethod?: Prisma.SortOrder;
     payoutStatus?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     pricePerDayAtBooking?: Prisma.SortOrder;
     nights?: Prisma.SortOrder;
     subtotal?: Prisma.SortOrder;
@@ -315,23 +326,24 @@ export type BookingScalarWhereWithAggregatesInput = {
     AND?: Prisma.BookingScalarWhereWithAggregatesInput | Prisma.BookingScalarWhereWithAggregatesInput[];
     OR?: Prisma.BookingScalarWhereWithAggregatesInput[];
     NOT?: Prisma.BookingScalarWhereWithAggregatesInput | Prisma.BookingScalarWhereWithAggregatesInput[];
-    id?: Prisma.StringWithAggregatesFilter<"Booking"> | string;
-    requestNumber?: Prisma.StringWithAggregatesFilter<"Booking"> | string;
-    status?: Prisma.EnumBookingStatusWithAggregatesFilter<"Booking"> | $Enums.BookingStatus;
-    startDate?: Prisma.DateTimeWithAggregatesFilter<"Booking"> | Date | string;
-    endDate?: Prisma.DateTimeWithAggregatesFilter<"Booking"> | Date | string;
-    pickupMethod?: Prisma.EnumPickupMethodWithAggregatesFilter<"Booking"> | $Enums.PickupMethod;
-    payoutStatus?: Prisma.EnumPayoutStatusNullableWithAggregatesFilter<"Booking"> | $Enums.PayoutStatus | null;
-    createdAt?: Prisma.DateTimeWithAggregatesFilter<"Booking"> | Date | string;
-    pricePerDayAtBooking?: Prisma.DecimalWithAggregatesFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    nights?: Prisma.IntWithAggregatesFilter<"Booking"> | number;
-    subtotal?: Prisma.DecimalWithAggregatesFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    serviceFee?: Prisma.DecimalWithAggregatesFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    tax?: Prisma.DecimalWithAggregatesFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    total?: Prisma.DecimalWithAggregatesFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    listingId?: Prisma.StringWithAggregatesFilter<"Booking"> | string;
-    renterId?: Prisma.StringWithAggregatesFilter<"Booking"> | string;
-    paymentMethodId?: Prisma.StringWithAggregatesFilter<"Booking"> | string;
+    id?: Prisma.StringWithAggregatesFilter<'Booking'> | string;
+    requestNumber?: Prisma.StringWithAggregatesFilter<'Booking'> | string;
+    status?: Prisma.EnumBookingStatusWithAggregatesFilter<'Booking'> | $Enums.BookingStatus;
+    startDate?: Prisma.DateTimeWithAggregatesFilter<'Booking'> | Date | string;
+    endDate?: Prisma.DateTimeWithAggregatesFilter<'Booking'> | Date | string;
+    pickupMethod?: Prisma.EnumPickupMethodWithAggregatesFilter<'Booking'> | $Enums.PickupMethod;
+    payoutStatus?: Prisma.EnumPayoutStatusNullableWithAggregatesFilter<'Booking'> | $Enums.PayoutStatus | null;
+    createdAt?: Prisma.DateTimeWithAggregatesFilter<'Booking'> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<'Booking'> | Date | string | null;
+    pricePerDayAtBooking?: Prisma.DecimalWithAggregatesFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    nights?: Prisma.IntWithAggregatesFilter<'Booking'> | number;
+    subtotal?: Prisma.DecimalWithAggregatesFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    serviceFee?: Prisma.DecimalWithAggregatesFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    tax?: Prisma.DecimalWithAggregatesFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    total?: Prisma.DecimalWithAggregatesFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    listingId?: Prisma.StringWithAggregatesFilter<'Booking'> | string;
+    renterId?: Prisma.StringWithAggregatesFilter<'Booking'> | string;
+    paymentMethodId?: Prisma.StringWithAggregatesFilter<'Booking'> | string;
 };
 export type BookingCreateInput = {
     id?: string;
@@ -342,6 +354,7 @@ export type BookingCreateInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -362,6 +375,7 @@ export type BookingUncheckedCreateInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -382,6 +396,7 @@ export type BookingUpdateInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -402,6 +417,7 @@ export type BookingUncheckedUpdateInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -422,6 +438,7 @@ export type BookingCreateManyInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -441,6 +458,7 @@ export type BookingUpdateManyMutationInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -457,6 +475,7 @@ export type BookingUncheckedUpdateManyInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -484,6 +503,7 @@ export type BookingCountOrderByAggregateInput = {
     pickupMethod?: Prisma.SortOrder;
     payoutStatus?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     pricePerDayAtBooking?: Prisma.SortOrder;
     nights?: Prisma.SortOrder;
     subtotal?: Prisma.SortOrder;
@@ -511,6 +531,7 @@ export type BookingMaxOrderByAggregateInput = {
     pickupMethod?: Prisma.SortOrder;
     payoutStatus?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     pricePerDayAtBooking?: Prisma.SortOrder;
     nights?: Prisma.SortOrder;
     subtotal?: Prisma.SortOrder;
@@ -530,6 +551,7 @@ export type BookingMinOrderByAggregateInput = {
     pickupMethod?: Prisma.SortOrder;
     payoutStatus?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     pricePerDayAtBooking?: Prisma.SortOrder;
     nights?: Prisma.SortOrder;
     subtotal?: Prisma.SortOrder;
@@ -703,6 +725,7 @@ export type BookingCreateWithoutRenterInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -722,6 +745,7 @@ export type BookingUncheckedCreateWithoutRenterInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -757,23 +781,24 @@ export type BookingScalarWhereInput = {
     AND?: Prisma.BookingScalarWhereInput | Prisma.BookingScalarWhereInput[];
     OR?: Prisma.BookingScalarWhereInput[];
     NOT?: Prisma.BookingScalarWhereInput | Prisma.BookingScalarWhereInput[];
-    id?: Prisma.StringFilter<"Booking"> | string;
-    requestNumber?: Prisma.StringFilter<"Booking"> | string;
-    status?: Prisma.EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus;
-    startDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    endDate?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pickupMethod?: Prisma.EnumPickupMethodFilter<"Booking"> | $Enums.PickupMethod;
-    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<"Booking"> | $Enums.PayoutStatus | null;
-    createdAt?: Prisma.DateTimeFilter<"Booking"> | Date | string;
-    pricePerDayAtBooking?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    nights?: Prisma.IntFilter<"Booking"> | number;
-    subtotal?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    serviceFee?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    tax?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    total?: Prisma.DecimalFilter<"Booking"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
-    listingId?: Prisma.StringFilter<"Booking"> | string;
-    renterId?: Prisma.StringFilter<"Booking"> | string;
-    paymentMethodId?: Prisma.StringFilter<"Booking"> | string;
+    id?: Prisma.StringFilter<'Booking'> | string;
+    requestNumber?: Prisma.StringFilter<'Booking'> | string;
+    status?: Prisma.EnumBookingStatusFilter<'Booking'> | $Enums.BookingStatus;
+    startDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    endDate?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    pickupMethod?: Prisma.EnumPickupMethodFilter<'Booking'> | $Enums.PickupMethod;
+    payoutStatus?: Prisma.EnumPayoutStatusNullableFilter<'Booking'> | $Enums.PayoutStatus | null;
+    createdAt?: Prisma.DateTimeFilter<'Booking'> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<'Booking'> | Date | string | null;
+    pricePerDayAtBooking?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    nights?: Prisma.IntFilter<'Booking'> | number;
+    subtotal?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    serviceFee?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    tax?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    total?: Prisma.DecimalFilter<'Booking'> | runtime.Decimal | runtime.DecimalJsLike | number | string;
+    listingId?: Prisma.StringFilter<'Booking'> | string;
+    renterId?: Prisma.StringFilter<'Booking'> | string;
+    paymentMethodId?: Prisma.StringFilter<'Booking'> | string;
 };
 export type BookingCreateWithoutListingInput = {
     id?: string;
@@ -784,6 +809,7 @@ export type BookingCreateWithoutListingInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -803,6 +829,7 @@ export type BookingUncheckedCreateWithoutListingInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -843,6 +870,7 @@ export type BookingCreateWithoutPaymentMethodInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -862,6 +890,7 @@ export type BookingUncheckedCreateWithoutPaymentMethodInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -902,6 +931,7 @@ export type BookingCreateWithoutDisputeInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -921,6 +951,7 @@ export type BookingUncheckedCreateWithoutDisputeInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -953,6 +984,7 @@ export type BookingUpdateWithoutDisputeInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -972,6 +1004,7 @@ export type BookingUncheckedUpdateWithoutDisputeInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -991,6 +1024,7 @@ export type BookingCreateManyRenterInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1009,6 +1043,7 @@ export type BookingUpdateWithoutRenterInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1028,6 +1063,7 @@ export type BookingUncheckedUpdateWithoutRenterInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1047,6 +1083,7 @@ export type BookingUncheckedUpdateManyWithoutRenterInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1065,6 +1102,7 @@ export type BookingCreateManyListingInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1083,6 +1121,7 @@ export type BookingUpdateWithoutListingInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1102,6 +1141,7 @@ export type BookingUncheckedUpdateWithoutListingInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1121,6 +1161,7 @@ export type BookingUncheckedUpdateManyWithoutListingInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1139,6 +1180,7 @@ export type BookingCreateManyPaymentMethodInput = {
     pickupMethod: $Enums.PickupMethod;
     payoutStatus?: $Enums.PayoutStatus | null;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     pricePerDayAtBooking: runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights: number;
     subtotal: runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1157,6 +1199,7 @@ export type BookingUpdateWithoutPaymentMethodInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1176,6 +1219,7 @@ export type BookingUncheckedUpdateWithoutPaymentMethodInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1195,6 +1239,7 @@ export type BookingUncheckedUpdateManyWithoutPaymentMethodInput = {
     pickupMethod?: Prisma.EnumPickupMethodFieldUpdateOperationsInput | $Enums.PickupMethod;
     payoutStatus?: Prisma.NullableEnumPayoutStatusFieldUpdateOperationsInput | $Enums.PayoutStatus | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     pricePerDayAtBooking?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     nights?: Prisma.IntFieldUpdateOperationsInput | number;
     subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
@@ -1213,6 +1258,7 @@ export type BookingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     pickupMethod?: boolean;
     payoutStatus?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     pricePerDayAtBooking?: boolean;
     nights?: boolean;
     subtotal?: boolean;
@@ -1226,7 +1272,7 @@ export type BookingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     renter?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     paymentMethod?: boolean | Prisma.PaymentMethodDefaultArgs<ExtArgs>;
     dispute?: boolean | Prisma.Booking$disputeArgs<ExtArgs>;
-}, ExtArgs["result"]["booking"]>;
+}, ExtArgs['result']['booking']>;
 export type BookingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
     id?: boolean;
     requestNumber?: boolean;
@@ -1236,6 +1282,7 @@ export type BookingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
     pickupMethod?: boolean;
     payoutStatus?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     pricePerDayAtBooking?: boolean;
     nights?: boolean;
     subtotal?: boolean;
@@ -1248,7 +1295,7 @@ export type BookingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
     listing?: boolean | Prisma.ListingDefaultArgs<ExtArgs>;
     renter?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     paymentMethod?: boolean | Prisma.PaymentMethodDefaultArgs<ExtArgs>;
-}, ExtArgs["result"]["booking"]>;
+}, ExtArgs['result']['booking']>;
 export type BookingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
     id?: boolean;
     requestNumber?: boolean;
@@ -1258,6 +1305,7 @@ export type BookingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
     pickupMethod?: boolean;
     payoutStatus?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     pricePerDayAtBooking?: boolean;
     nights?: boolean;
     subtotal?: boolean;
@@ -1270,7 +1318,7 @@ export type BookingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
     listing?: boolean | Prisma.ListingDefaultArgs<ExtArgs>;
     renter?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     paymentMethod?: boolean | Prisma.PaymentMethodDefaultArgs<ExtArgs>;
-}, ExtArgs["result"]["booking"]>;
+}, ExtArgs['result']['booking']>;
 export type BookingSelectScalar = {
     id?: boolean;
     requestNumber?: boolean;
@@ -1280,6 +1328,7 @@ export type BookingSelectScalar = {
     pickupMethod?: boolean;
     payoutStatus?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     pricePerDayAtBooking?: boolean;
     nights?: boolean;
     subtotal?: boolean;
@@ -1290,7 +1339,7 @@ export type BookingSelectScalar = {
     renterId?: boolean;
     paymentMethodId?: boolean;
 };
-export type BookingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "requestNumber" | "status" | "startDate" | "endDate" | "pickupMethod" | "payoutStatus" | "createdAt" | "pricePerDayAtBooking" | "nights" | "subtotal" | "serviceFee" | "tax" | "total" | "listingId" | "renterId" | "paymentMethodId", ExtArgs["result"]["booking"]>;
+export type BookingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<'id' | 'requestNumber' | 'status' | 'startDate' | 'endDate' | 'pickupMethod' | 'payoutStatus' | 'createdAt' | 'deletedAt' | 'pricePerDayAtBooking' | 'nights' | 'subtotal' | 'serviceFee' | 'tax' | 'total' | 'listingId' | 'renterId' | 'paymentMethodId', ExtArgs['result']['booking']>;
 export type BookingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     listing?: boolean | Prisma.ListingDefaultArgs<ExtArgs>;
     renter?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
@@ -1308,7 +1357,7 @@ export type BookingIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
     paymentMethod?: boolean | Prisma.PaymentMethodDefaultArgs<ExtArgs>;
 };
 export type $BookingPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-    name: "Booking";
+    name: 'Booking';
     objects: {
         listing: Prisma.$ListingPayload<ExtArgs>;
         renter: Prisma.$UserPayload<ExtArgs>;
@@ -1324,6 +1373,7 @@ export type $BookingPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
         pickupMethod: $Enums.PickupMethod;
         payoutStatus: $Enums.PayoutStatus | null;
         createdAt: Date;
+        deletedAt: Date | null;
         pricePerDayAtBooking: runtime.Decimal;
         nights: number;
         subtotal: runtime.Decimal;
@@ -1333,7 +1383,7 @@ export type $BookingPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
         listingId: string;
         renterId: string;
         paymentMethodId: string;
-    }, ExtArgs["result"]["booking"]>;
+    }, ExtArgs['result']['booking']>;
     composites: {};
 };
 export type BookingGetPayload<S extends boolean | null | undefined | BookingDefaultArgs> = runtime.Types.Result.GetResult<Prisma.$BookingPayload, S>;
@@ -1347,27 +1397,27 @@ export interface BookingDelegate<ExtArgs extends runtime.Types.Extensions.Intern
             name: 'Booking';
         };
     };
-    findUnique<T extends BookingFindUniqueArgs>(args: Prisma.SelectSubset<T, BookingFindUniqueArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
-    findUniqueOrThrow<T extends BookingFindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, BookingFindUniqueOrThrowArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
-    findFirst<T extends BookingFindFirstArgs>(args?: Prisma.SelectSubset<T, BookingFindFirstArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
-    findFirstOrThrow<T extends BookingFindFirstOrThrowArgs>(args?: Prisma.SelectSubset<T, BookingFindFirstOrThrowArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
-    findMany<T extends BookingFindManyArgs>(args?: Prisma.SelectSubset<T, BookingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>;
-    create<T extends BookingCreateArgs>(args: Prisma.SelectSubset<T, BookingCreateArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    findUnique<T extends BookingFindUniqueArgs>(args: Prisma.SelectSubset<T, BookingFindUniqueArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'findUnique', GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    findUniqueOrThrow<T extends BookingFindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, BookingFindUniqueOrThrowArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'findUniqueOrThrow', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    findFirst<T extends BookingFindFirstArgs>(args?: Prisma.SelectSubset<T, BookingFindFirstArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'findFirst', GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    findFirstOrThrow<T extends BookingFindFirstOrThrowArgs>(args?: Prisma.SelectSubset<T, BookingFindFirstOrThrowArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'findFirstOrThrow', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    findMany<T extends BookingFindManyArgs>(args?: Prisma.SelectSubset<T, BookingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'findMany', GlobalOmitOptions>>;
+    create<T extends BookingCreateArgs>(args: Prisma.SelectSubset<T, BookingCreateArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'create', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
     createMany<T extends BookingCreateManyArgs>(args?: Prisma.SelectSubset<T, BookingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
-    createManyAndReturn<T extends BookingCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, BookingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>;
-    delete<T extends BookingDeleteArgs>(args: Prisma.SelectSubset<T, BookingDeleteArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
-    update<T extends BookingUpdateArgs>(args: Prisma.SelectSubset<T, BookingUpdateArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    createManyAndReturn<T extends BookingCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, BookingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'createManyAndReturn', GlobalOmitOptions>>;
+    delete<T extends BookingDeleteArgs>(args: Prisma.SelectSubset<T, BookingDeleteArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'delete', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    update<T extends BookingUpdateArgs>(args: Prisma.SelectSubset<T, BookingUpdateArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'update', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
     deleteMany<T extends BookingDeleteManyArgs>(args?: Prisma.SelectSubset<T, BookingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
     updateMany<T extends BookingUpdateManyArgs>(args: Prisma.SelectSubset<T, BookingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
-    updateManyAndReturn<T extends BookingUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, BookingUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>;
-    upsert<T extends BookingUpsertArgs>(args: Prisma.SelectSubset<T, BookingUpsertArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    updateManyAndReturn<T extends BookingUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, BookingUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'updateManyAndReturn', GlobalOmitOptions>>;
+    upsert<T extends BookingUpsertArgs>(args: Prisma.SelectSubset<T, BookingUpsertArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, 'upsert', GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
     count<T extends BookingCountArgs>(args?: Prisma.Subset<T, BookingCountArgs>): Prisma.PrismaPromise<T extends runtime.Types.Utils.Record<'select', any> ? T['select'] extends true ? number : Prisma.GetScalarType<T['select'], BookingCountAggregateOutputType> : number>;
     aggregate<T extends BookingAggregateArgs>(args: Prisma.Subset<T, BookingAggregateArgs>): Prisma.PrismaPromise<GetBookingAggregateType<T>>;
-    groupBy<T extends BookingGroupByArgs, HasSelectOrTake extends Prisma.Or<Prisma.Extends<'skip', Prisma.Keys<T>>, Prisma.Extends<'take', Prisma.Keys<T>>>, OrderByArg extends Prisma.True extends HasSelectOrTake ? {
+    groupBy<T extends BookingGroupByArgs, HasSelectOrTake extends Prisma.Or<Prisma.Extends<'skip', Prisma.Keys<T>>, Prisma.Extends<'take', Prisma.Keys<T>>>, OrderByArg extends (Prisma.True extends HasSelectOrTake ? {
         orderBy: BookingGroupByArgs['orderBy'];
     } : {
         orderBy?: BookingGroupByArgs['orderBy'];
-    }, OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>, ByFields extends Prisma.MaybeTupleToUnion<T['by']>, ByValid extends Prisma.Has<ByFields, OrderFields>, HavingFields extends Prisma.GetHavingFields<T['having']>, HavingValid extends Prisma.Has<ByFields, HavingFields>, ByEmpty extends T['by'] extends never[] ? Prisma.True : Prisma.False, InputErrors extends ByEmpty extends Prisma.True ? `Error: "by" must not be empty.` : HavingValid extends Prisma.False ? {
+    }), OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>, ByFields extends Prisma.MaybeTupleToUnion<T['by']>, ByValid extends Prisma.Has<ByFields, OrderFields>, HavingFields extends Prisma.GetHavingFields<T['having']>, HavingValid extends Prisma.Has<ByFields, HavingFields>, ByEmpty extends (T['by'] extends never[] ? Prisma.True : Prisma.False), InputErrors extends (ByEmpty extends Prisma.True ? `Error: "by" must not be empty.` : HavingValid extends Prisma.False ? {
         [P in HavingFields]: P extends ByFields ? never : P extends string ? `Error: Field "${P}" used in "having" needs to be provided in "by".` : [
             Error,
             'Field ',
@@ -1380,37 +1430,38 @@ export interface BookingDelegate<ExtArgs extends runtime.Types.Extensions.Intern
         [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
     }[OrderFields] : 'Error: If you provide "skip", you also need to provide "orderBy"' : ByValid extends Prisma.True ? {} : {
         [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
-    }[OrderFields]>(args: Prisma.SubsetIntersection<T, BookingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBookingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>;
+    }[OrderFields])>(args: Prisma.SubsetIntersection<T, BookingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBookingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>;
     readonly fields: BookingFieldRefs;
 }
 export interface Prisma__BookingClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise";
-    listing<T extends Prisma.ListingDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ListingDefaultArgs<ExtArgs>>): Prisma.Prisma__ListingClient<runtime.Types.Result.GetResult<Prisma.$ListingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
-    renter<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
-    paymentMethod<T extends Prisma.PaymentMethodDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentMethodDefaultArgs<ExtArgs>>): Prisma.Prisma__PaymentMethodClient<runtime.Types.Result.GetResult<Prisma.$PaymentMethodPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
-    dispute<T extends Prisma.Booking$disputeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Booking$disputeArgs<ExtArgs>>): Prisma.Prisma__DisputeClient<runtime.Types.Result.GetResult<Prisma.$DisputePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+    listing<T extends Prisma.ListingDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ListingDefaultArgs<ExtArgs>>): Prisma.Prisma__ListingClient<runtime.Types.Result.GetResult<Prisma.$ListingPayload<ExtArgs>, T, 'findUniqueOrThrow', GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    renter<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, 'findUniqueOrThrow', GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    paymentMethod<T extends Prisma.PaymentMethodDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentMethodDefaultArgs<ExtArgs>>): Prisma.Prisma__PaymentMethodClient<runtime.Types.Result.GetResult<Prisma.$PaymentMethodPayload<ExtArgs>, T, 'findUniqueOrThrow', GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    dispute<T extends Prisma.Booking$disputeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Booking$disputeArgs<ExtArgs>>): Prisma.Prisma__DisputeClient<runtime.Types.Result.GetResult<Prisma.$DisputePayload<ExtArgs>, T, 'findUniqueOrThrow', GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
     then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): runtime.Types.Utils.JsPromise<TResult1 | TResult2>;
     catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): runtime.Types.Utils.JsPromise<T | TResult>;
     finally(onfinally?: (() => void) | undefined | null): runtime.Types.Utils.JsPromise<T>;
 }
 export interface BookingFieldRefs {
-    readonly id: Prisma.FieldRef<"Booking", 'String'>;
-    readonly requestNumber: Prisma.FieldRef<"Booking", 'String'>;
-    readonly status: Prisma.FieldRef<"Booking", 'BookingStatus'>;
-    readonly startDate: Prisma.FieldRef<"Booking", 'DateTime'>;
-    readonly endDate: Prisma.FieldRef<"Booking", 'DateTime'>;
-    readonly pickupMethod: Prisma.FieldRef<"Booking", 'PickupMethod'>;
-    readonly payoutStatus: Prisma.FieldRef<"Booking", 'PayoutStatus'>;
-    readonly createdAt: Prisma.FieldRef<"Booking", 'DateTime'>;
-    readonly pricePerDayAtBooking: Prisma.FieldRef<"Booking", 'Decimal'>;
-    readonly nights: Prisma.FieldRef<"Booking", 'Int'>;
-    readonly subtotal: Prisma.FieldRef<"Booking", 'Decimal'>;
-    readonly serviceFee: Prisma.FieldRef<"Booking", 'Decimal'>;
-    readonly tax: Prisma.FieldRef<"Booking", 'Decimal'>;
-    readonly total: Prisma.FieldRef<"Booking", 'Decimal'>;
-    readonly listingId: Prisma.FieldRef<"Booking", 'String'>;
-    readonly renterId: Prisma.FieldRef<"Booking", 'String'>;
-    readonly paymentMethodId: Prisma.FieldRef<"Booking", 'String'>;
+    readonly id: Prisma.FieldRef<'Booking', 'String'>;
+    readonly requestNumber: Prisma.FieldRef<'Booking', 'String'>;
+    readonly status: Prisma.FieldRef<'Booking', 'BookingStatus'>;
+    readonly startDate: Prisma.FieldRef<'Booking', 'DateTime'>;
+    readonly endDate: Prisma.FieldRef<'Booking', 'DateTime'>;
+    readonly pickupMethod: Prisma.FieldRef<'Booking', 'PickupMethod'>;
+    readonly payoutStatus: Prisma.FieldRef<'Booking', 'PayoutStatus'>;
+    readonly createdAt: Prisma.FieldRef<'Booking', 'DateTime'>;
+    readonly deletedAt: Prisma.FieldRef<'Booking', 'DateTime'>;
+    readonly pricePerDayAtBooking: Prisma.FieldRef<'Booking', 'Decimal'>;
+    readonly nights: Prisma.FieldRef<'Booking', 'Int'>;
+    readonly subtotal: Prisma.FieldRef<'Booking', 'Decimal'>;
+    readonly serviceFee: Prisma.FieldRef<'Booking', 'Decimal'>;
+    readonly tax: Prisma.FieldRef<'Booking', 'Decimal'>;
+    readonly total: Prisma.FieldRef<'Booking', 'Decimal'>;
+    readonly listingId: Prisma.FieldRef<'Booking', 'String'>;
+    readonly renterId: Prisma.FieldRef<'Booking', 'String'>;
+    readonly paymentMethodId: Prisma.FieldRef<'Booking', 'String'>;
 }
 export type BookingFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     select?: Prisma.BookingSelect<ExtArgs> | null;

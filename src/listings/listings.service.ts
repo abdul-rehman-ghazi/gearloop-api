@@ -31,6 +31,7 @@ export class ListingsService {
 
   async findAll(dto: SearchListingsDto, callerUserId?: string) {
     const where: Prisma.ListingWhereInput = {
+      deletedAt: null,
       ...(callerUserId
         ? { OR: [{ status: 'active' }, { ownerId: callerUserId }] }
         : { status: 'active' }),
@@ -60,14 +61,16 @@ export class ListingsService {
 
   async findById(id: string) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
-    if (!listing) throw new NotFoundException('Listing not found');
+    if (!listing || listing.deletedAt) {
+      throw new NotFoundException('Listing not found');
+    }
     return listing;
   }
 
   async getBookedRanges(id: string) {
     await this.findById(id);
     return this.prisma.booking.findMany({
-      where: { listingId: id, status: 'confirmed' },
+      where: { listingId: id, status: 'confirmed', deletedAt: null },
       select: { startDate: true, endDate: true },
     });
   }

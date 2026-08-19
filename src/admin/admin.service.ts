@@ -15,6 +15,7 @@ export class AdminService {
 
   async findAllUsers() {
     const users = await this.prisma.user.findMany({
+      where: { deletedAt: null },
       orderBy: { memberSince: 'desc' },
     });
     return users.map(({ passwordHash: _passwordHash, ...rest }) => rest);
@@ -30,7 +31,9 @@ export class AdminService {
 
   private async setUserSuspended(id: string, isSuspended: boolean) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('User not found');
+    if (!existing || existing.deletedAt) {
+      throw new NotFoundException('User not found');
+    }
     const user = await this.prisma.user.update({
       where: { id },
       data: { isSuspended },
@@ -41,7 +44,9 @@ export class AdminService {
 
   async updateUser(id: string, dto: AdminUpdateUserDto) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('User not found');
+    if (!existing || existing.deletedAt) {
+      throw new NotFoundException('User not found');
+    }
 
     if (dto.email && dto.email !== existing.email) {
       const emailTaken = await this.prisma.user.findUnique({
@@ -63,21 +68,21 @@ export class AdminService {
 
   async deleteUser(id: string) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('User not found');
-
-    const hasBookingHistory = await this.prisma.booking.findFirst({
-      where: { OR: [{ renterId: id }, { listing: { ownerId: id } }] },
-    });
-    if (hasBookingHistory) {
-      throw new ConflictException(
-        'This user has booking history and cannot be deleted',
-      );
+    if (!existing || existing.deletedAt) {
+      throw new NotFoundException('User not found');
     }
 
+    const now = new Date();
     await this.prisma.$transaction([
-      this.prisma.paymentMethod.deleteMany({ where: { userId: id } }),
-      this.prisma.listing.deleteMany({ where: { ownerId: id } }),
-      this.prisma.user.delete({ where: { id } }),
+      this.prisma.booking.updateMany({
+        where: { listing: { ownerId: id } },
+        data: { deletedAt: now },
+      }),
+      this.prisma.listing.updateMany({
+        where: { ownerId: id },
+        data: { deletedAt: now },
+      }),
+      this.prisma.user.update({ where: { id }, data: { deletedAt: now } }),
     ]);
   }
 
@@ -96,7 +101,7 @@ export class AdminService {
 
   async findAllListings(status?: ListingStatus) {
     const listings = await this.prisma.listing.findMany({
-      where: status ? { status } : undefined,
+      where: { deletedAt: null, ...(status && { status }) },
       include: { owner: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -113,7 +118,9 @@ export class AdminService {
       where: { id },
       include: { owner: true },
     });
-    if (!listing) throw new NotFoundException('Listing not found');
+    if (!listing || listing.deletedAt) {
+      throw new NotFoundException('Listing not found');
+    }
     const { owner, ...rest } = listing;
     const { passwordHash: _passwordHash, ...ownerRest } = owner;
     return { ...rest, owner: ownerRest };
@@ -121,7 +128,9 @@ export class AdminService {
 
   async updateListing(id: string, dto: UpdateListingDto) {
     const existing = await this.prisma.listing.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Listing not found');
+    if (!existing || existing.deletedAt) {
+      throw new NotFoundException('Listing not found');
+    }
 
     const listing = await this.prisma.listing.update({
       where: { id },
@@ -135,17 +144,17 @@ export class AdminService {
 
   async deleteListing(id: string) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
-    if (!listing) throw new NotFoundException('Listing not found');
-
-    const activeBooking = await this.prisma.booking.findFirst({
-      where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
-    });
-    if (activeBooking) {
-      throw new ConflictException(
-        'This listing has an active booking and cannot be deleted',
-      );
+    if (!listing || listing.deletedAt) {
+      throw new NotFoundException('Listing not found');
     }
 
-    await this.prisma.listing.delete({ where: { id } });
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.booking.updateMany({
+        where: { listingId: id },
+        data: { deletedAt: now },
+      }),
+      this.prisma.listing.update({ where: { id }, data: { deletedAt: now } }),
+    ]);
   }
 }

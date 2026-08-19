@@ -24,6 +24,8 @@ export declare class MessagesController {
     findThreads(user: UserAuthContext): Promise<({
         listing: {
             id: string;
+            deletedAt: Date | null;
+            createdAt: Date;
             title: string;
             category: import("../../generated/prisma/enums").ListingCategory;
             location: string;
@@ -31,7 +33,6 @@ export declare class MessagesController {
             description: string;
             images: string[];
             status: import("../../generated/prisma/enums").ListingStatus;
-            createdAt: Date;
             ownerId: string;
         };
         messages: {

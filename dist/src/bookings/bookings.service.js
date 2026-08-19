@@ -22,8 +22,9 @@ let BookingsService = class BookingsService {
         const listing = await this.prisma.listing.findUnique({
             where: { id: dto.listingId },
         });
-        if (!listing)
+        if (!listing || listing.deletedAt) {
             throw new common_1.NotFoundException('Listing not found');
+        }
         const paymentMethod = await this.prisma.paymentMethod.findUnique({
             where: { id: dto.paymentMethodId },
         });
@@ -108,6 +109,7 @@ let BookingsService = class BookingsService {
             where: {
                 listingId,
                 status: 'confirmed',
+                deletedAt: null,
                 startDate: { lt: end },
                 endDate: { gt: start },
                 ...(excludeBookingId && { id: { not: excludeBookingId } }),

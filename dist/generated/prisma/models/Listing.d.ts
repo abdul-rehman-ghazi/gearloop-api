@@ -24,6 +24,7 @@ export type ListingMinAggregateOutputType = {
     description: string | null;
     status: $Enums.ListingStatus | null;
     createdAt: Date | null;
+    deletedAt: Date | null;
     ownerId: string | null;
 };
 export type ListingMaxAggregateOutputType = {
@@ -35,6 +36,7 @@ export type ListingMaxAggregateOutputType = {
     description: string | null;
     status: $Enums.ListingStatus | null;
     createdAt: Date | null;
+    deletedAt: Date | null;
     ownerId: string | null;
 };
 export type ListingCountAggregateOutputType = {
@@ -47,6 +49,7 @@ export type ListingCountAggregateOutputType = {
     images: number;
     status: number;
     createdAt: number;
+    deletedAt: number;
     ownerId: number;
     _all: number;
 };
@@ -65,6 +68,7 @@ export type ListingMinAggregateInputType = {
     description?: true;
     status?: true;
     createdAt?: true;
+    deletedAt?: true;
     ownerId?: true;
 };
 export type ListingMaxAggregateInputType = {
@@ -76,6 +80,7 @@ export type ListingMaxAggregateInputType = {
     description?: true;
     status?: true;
     createdAt?: true;
+    deletedAt?: true;
     ownerId?: true;
 };
 export type ListingCountAggregateInputType = {
@@ -88,6 +93,7 @@ export type ListingCountAggregateInputType = {
     images?: true;
     status?: true;
     createdAt?: true;
+    deletedAt?: true;
     ownerId?: true;
     _all?: true;
 };
@@ -129,6 +135,7 @@ export type ListingGroupByOutputType = {
     images: string[];
     status: $Enums.ListingStatus;
     createdAt: Date;
+    deletedAt: Date | null;
     ownerId: string;
     _count: ListingCountAggregateOutputType | null;
     _avg: ListingAvgAggregateOutputType | null;
@@ -152,6 +159,7 @@ export type ListingWhereInput = {
     images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<"Listing"> | Date | string | null;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
     owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     bookings?: Prisma.BookingListRelationFilter;
@@ -167,6 +175,7 @@ export type ListingOrderByWithRelationInput = {
     images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
     owner?: Prisma.UserOrderByWithRelationInput;
     bookings?: Prisma.BookingOrderByRelationAggregateInput;
@@ -185,6 +194,7 @@ export type ListingWhereUniqueInput = Prisma.AtLeast<{
     images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<"Listing"> | Date | string | null;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
     owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     bookings?: Prisma.BookingListRelationFilter;
@@ -200,6 +210,7 @@ export type ListingOrderByWithAggregationInput = {
     images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
     _count?: Prisma.ListingCountOrderByAggregateInput;
     _avg?: Prisma.ListingAvgOrderByAggregateInput;
@@ -220,6 +231,7 @@ export type ListingScalarWhereWithAggregatesInput = {
     images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusWithAggregatesFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"Listing"> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Listing"> | Date | string | null;
     ownerId?: Prisma.StringWithAggregatesFilter<"Listing"> | string;
 };
 export type ListingCreateInput = {
@@ -232,6 +244,7 @@ export type ListingCreateInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutListingInput;
     threads?: Prisma.MessageThreadCreateNestedManyWithoutListingInput;
@@ -246,6 +259,7 @@ export type ListingUncheckedCreateInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     ownerId: string;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutListingInput;
     threads?: Prisma.MessageThreadUncheckedCreateNestedManyWithoutListingInput;
@@ -260,6 +274,7 @@ export type ListingUpdateInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutListingNestedInput;
     threads?: Prisma.MessageThreadUpdateManyWithoutListingNestedInput;
@@ -274,6 +289,7 @@ export type ListingUncheckedUpdateInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutListingNestedInput;
     threads?: Prisma.MessageThreadUncheckedUpdateManyWithoutListingNestedInput;
@@ -288,6 +304,7 @@ export type ListingCreateManyInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     ownerId: string;
 };
 export type ListingUpdateManyMutationInput = {
@@ -300,6 +317,7 @@ export type ListingUpdateManyMutationInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
 };
 export type ListingUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -311,6 +329,7 @@ export type ListingUncheckedUpdateManyInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
 };
 export type ListingListRelationFilter = {
@@ -338,6 +357,7 @@ export type ListingCountOrderByAggregateInput = {
     images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
 };
 export type ListingAvgOrderByAggregateInput = {
@@ -352,6 +372,7 @@ export type ListingMaxOrderByAggregateInput = {
     description?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
 };
 export type ListingMinOrderByAggregateInput = {
@@ -363,6 +384,7 @@ export type ListingMinOrderByAggregateInput = {
     description?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
 };
 export type ListingSumOrderByAggregateInput = {
@@ -464,6 +486,7 @@ export type ListingCreateWithoutOwnerInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     bookings?: Prisma.BookingCreateNestedManyWithoutListingInput;
     threads?: Prisma.MessageThreadCreateNestedManyWithoutListingInput;
 };
@@ -477,6 +500,7 @@ export type ListingUncheckedCreateWithoutOwnerInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutListingInput;
     threads?: Prisma.MessageThreadUncheckedCreateNestedManyWithoutListingInput;
 };
@@ -514,6 +538,7 @@ export type ListingScalarWhereInput = {
     images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
+    deletedAt?: Prisma.DateTimeNullableFilter<"Listing"> | Date | string | null;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
 };
 export type ListingCreateWithoutBookingsInput = {
@@ -526,6 +551,7 @@ export type ListingCreateWithoutBookingsInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
     threads?: Prisma.MessageThreadCreateNestedManyWithoutListingInput;
 };
@@ -539,6 +565,7 @@ export type ListingUncheckedCreateWithoutBookingsInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     ownerId: string;
     threads?: Prisma.MessageThreadUncheckedCreateNestedManyWithoutListingInput;
 };
@@ -565,6 +592,7 @@ export type ListingUpdateWithoutBookingsInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
     threads?: Prisma.MessageThreadUpdateManyWithoutListingNestedInput;
 };
@@ -578,6 +606,7 @@ export type ListingUncheckedUpdateWithoutBookingsInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
     threads?: Prisma.MessageThreadUncheckedUpdateManyWithoutListingNestedInput;
 };
@@ -591,6 +620,7 @@ export type ListingCreateWithoutThreadsInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutListingInput;
 };
@@ -604,6 +634,7 @@ export type ListingUncheckedCreateWithoutThreadsInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
     ownerId: string;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutListingInput;
 };
@@ -630,6 +661,7 @@ export type ListingUpdateWithoutThreadsInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutListingNestedInput;
 };
@@ -643,6 +675,7 @@ export type ListingUncheckedUpdateWithoutThreadsInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutListingNestedInput;
 };
@@ -656,6 +689,7 @@ export type ListingCreateManyOwnerInput = {
     images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
+    deletedAt?: Date | string | null;
 };
 export type ListingUpdateWithoutOwnerInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -667,6 +701,7 @@ export type ListingUpdateWithoutOwnerInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     bookings?: Prisma.BookingUpdateManyWithoutListingNestedInput;
     threads?: Prisma.MessageThreadUpdateManyWithoutListingNestedInput;
 };
@@ -680,6 +715,7 @@ export type ListingUncheckedUpdateWithoutOwnerInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutListingNestedInput;
     threads?: Prisma.MessageThreadUncheckedUpdateManyWithoutListingNestedInput;
 };
@@ -693,6 +729,7 @@ export type ListingUncheckedUpdateManyWithoutOwnerInput = {
     images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
 };
 export type ListingCountOutputType = {
     bookings: number;
@@ -721,6 +758,7 @@ export type ListingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     images?: boolean;
     status?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     ownerId?: boolean;
     owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     bookings?: boolean | Prisma.Listing$bookingsArgs<ExtArgs>;
@@ -737,6 +775,7 @@ export type ListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
     images?: boolean;
     status?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     ownerId?: boolean;
     owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
 }, ExtArgs["result"]["listing"]>;
@@ -750,6 +789,7 @@ export type ListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
     images?: boolean;
     status?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     ownerId?: boolean;
     owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
 }, ExtArgs["result"]["listing"]>;
@@ -763,9 +803,10 @@ export type ListingSelectScalar = {
     images?: boolean;
     status?: boolean;
     createdAt?: boolean;
+    deletedAt?: boolean;
     ownerId?: boolean;
 };
-export type ListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "category" | "location" | "pricePerDay" | "description" | "images" | "status" | "createdAt" | "ownerId", ExtArgs["result"]["listing"]>;
+export type ListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "category" | "location" | "pricePerDay" | "description" | "images" | "status" | "createdAt" | "deletedAt" | "ownerId", ExtArgs["result"]["listing"]>;
 export type ListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     bookings?: boolean | Prisma.Listing$bookingsArgs<ExtArgs>;
@@ -795,6 +836,7 @@ export type $ListingPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
         images: string[];
         status: $Enums.ListingStatus;
         createdAt: Date;
+        deletedAt: Date | null;
         ownerId: string;
     }, ExtArgs["result"]["listing"]>;
     composites: {};
@@ -865,6 +907,7 @@ export interface ListingFieldRefs {
     readonly images: Prisma.FieldRef<"Listing", 'String[]'>;
     readonly status: Prisma.FieldRef<"Listing", 'ListingStatus'>;
     readonly createdAt: Prisma.FieldRef<"Listing", 'DateTime'>;
+    readonly deletedAt: Prisma.FieldRef<"Listing", 'DateTime'>;
     readonly ownerId: Prisma.FieldRef<"Listing", 'String'>;
 }
 export type ListingFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {

@@ -54,7 +54,9 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const passwordMatches = await bcrypt.compare(
       dto.password,

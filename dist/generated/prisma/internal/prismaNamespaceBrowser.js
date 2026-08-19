@@ -69,7 +69,8 @@ exports.UserScalarFieldEnum = {
     isOwner: 'isOwner',
     isSuspended: 'isSuspended',
     memberSince: 'memberSince',
-    responseTime: 'responseTime'
+    responseTime: 'responseTime',
+    deletedAt: 'deletedAt'
 };
 exports.ListingScalarFieldEnum = {
     id: 'id',
@@ -81,6 +82,7 @@ exports.ListingScalarFieldEnum = {
     images: 'images',
     status: 'status',
     createdAt: 'createdAt',
+    deletedAt: 'deletedAt',
     ownerId: 'ownerId'
 };
 exports.BookingScalarFieldEnum = {
@@ -92,6 +94,7 @@ exports.BookingScalarFieldEnum = {
     pickupMethod: 'pickupMethod',
     payoutStatus: 'payoutStatus',
     createdAt: 'createdAt',
+    deletedAt: 'deletedAt',
     pricePerDayAtBooking: 'pricePerDayAtBooking',
     nights: 'nights',
     subtotal: 'subtotal',

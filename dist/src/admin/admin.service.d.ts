@@ -7,59 +7,66 @@ export declare class AdminService {
     constructor(prisma: PrismaService);
     findAllUsers(): Promise<{
         id: string;
-        name: string;
         email: string;
+        name: string;
         initials: string;
         isOwner: boolean;
         isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
+        deletedAt: Date | null;
     }[]>;
     suspendUser(id: string): Promise<{
         id: string;
-        name: string;
         email: string;
+        name: string;
         initials: string;
         isOwner: boolean;
         isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
+        deletedAt: Date | null;
     }>;
     reinstateUser(id: string): Promise<{
         id: string;
-        name: string;
         email: string;
+        name: string;
         initials: string;
         isOwner: boolean;
         isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
+        deletedAt: Date | null;
     }>;
     private setUserSuspended;
     updateUser(id: string, dto: AdminUpdateUserDto): Promise<{
         id: string;
-        name: string;
         email: string;
+        name: string;
         initials: string;
         isOwner: boolean;
         isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
+        deletedAt: Date | null;
     }>;
     deleteUser(id: string): Promise<void>;
     findAllBookings(): Promise<{
         renter: {
             id: string;
-            name: string;
             email: string;
+            name: string;
             initials: string;
             isOwner: boolean;
             isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
+            deletedAt: Date | null;
         };
         listing: {
             id: string;
+            deletedAt: Date | null;
+            createdAt: Date;
             title: string;
             category: import("../../generated/prisma/enums").ListingCategory;
             location: string;
@@ -67,12 +74,12 @@ export declare class AdminService {
             description: string;
             images: string[];
             status: ListingStatus;
-            createdAt: Date;
             ownerId: string;
         };
         id: string;
-        status: import("../../generated/prisma/enums").BookingStatus;
+        deletedAt: Date | null;
         createdAt: Date;
+        status: import("../../generated/prisma/enums").BookingStatus;
         requestNumber: string;
         startDate: Date;
         endDate: Date;
@@ -91,15 +98,18 @@ export declare class AdminService {
     findAllListings(status?: ListingStatus): Promise<{
         owner: {
             id: string;
-            name: string;
             email: string;
+            name: string;
             initials: string;
             isOwner: boolean;
             isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
+            deletedAt: Date | null;
         };
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -107,21 +117,23 @@ export declare class AdminService {
         description: string;
         images: string[];
         status: ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }[]>;
     findListingById(id: string): Promise<{
         owner: {
             id: string;
-            name: string;
             email: string;
+            name: string;
             initials: string;
             isOwner: boolean;
             isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
+            deletedAt: Date | null;
         };
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -129,21 +141,23 @@ export declare class AdminService {
         description: string;
         images: string[];
         status: ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     updateListing(id: string, dto: UpdateListingDto): Promise<{
         owner: {
             id: string;
-            name: string;
             email: string;
+            name: string;
             initials: string;
             isOwner: boolean;
             isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
+            deletedAt: Date | null;
         };
         id: string;
+        deletedAt: Date | null;
+        createdAt: Date;
         title: string;
         category: import("../../generated/prisma/enums").ListingCategory;
         location: string;
@@ -151,7 +165,6 @@ export declare class AdminService {
         description: string;
         images: string[];
         status: ListingStatus;
-        createdAt: Date;
         ownerId: string;
     }>;
     deleteListing(id: string): Promise<void>;

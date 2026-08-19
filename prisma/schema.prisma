@@ -68,6 +68,7 @@ model User {
   isSuspended   Boolean  @default(false)
   memberSince   DateTime @default(now())
   responseTime  String?
+  deletedAt     DateTime?
 
   listings       Listing[]
   bookings       Booking[]       @relation("RenterBookings")
@@ -91,6 +92,7 @@ model Listing {
   images      String[]        @default([])
   status      ListingStatus   @default(pending)
   createdAt   DateTime        @default(now())
+  deletedAt   DateTime?
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
@@ -115,6 +117,7 @@ model Booking {
   pickupMethod  PickupMethod
   payoutStatus  PayoutStatus?
   createdAt     DateTime      @default(now())
+  deletedAt     DateTime?
 
   // Pricing snapshot at time of booking — stored, not recomputed, since
   // Listing.pricePerDay can change later and a past booking's receipt

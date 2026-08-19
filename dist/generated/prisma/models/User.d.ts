@@ -16,6 +16,7 @@ export type UserMinAggregateOutputType = {
     isSuspended: boolean | null;
     memberSince: Date | null;
     responseTime: string | null;
+    deletedAt: Date | null;
 };
 export type UserMaxAggregateOutputType = {
     id: string | null;
@@ -27,6 +28,7 @@ export type UserMaxAggregateOutputType = {
     isSuspended: boolean | null;
     memberSince: Date | null;
     responseTime: string | null;
+    deletedAt: Date | null;
 };
 export type UserCountAggregateOutputType = {
     id: number;
@@ -38,6 +40,7 @@ export type UserCountAggregateOutputType = {
     isSuspended: number;
     memberSince: number;
     responseTime: number;
+    deletedAt: number;
     _all: number;
 };
 export type UserMinAggregateInputType = {
@@ -50,6 +53,7 @@ export type UserMinAggregateInputType = {
     isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
+    deletedAt?: true;
 };
 export type UserMaxAggregateInputType = {
     id?: true;
@@ -61,6 +65,7 @@ export type UserMaxAggregateInputType = {
     isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
+    deletedAt?: true;
 };
 export type UserCountAggregateInputType = {
     id?: true;
@@ -72,6 +77,7 @@ export type UserCountAggregateInputType = {
     isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
+    deletedAt?: true;
     _all?: true;
 };
 export type UserAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -108,6 +114,7 @@ export type UserGroupByOutputType = {
     isSuspended: boolean;
     memberSince: Date;
     responseTime: string | null;
+    deletedAt: Date | null;
     _count: UserCountAggregateOutputType | null;
     _min: UserMinAggregateOutputType | null;
     _max: UserMaxAggregateOutputType | null;
@@ -128,6 +135,7 @@ export type UserWhereInput = {
     isSuspended?: Prisma.BoolFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableFilter<"User"> | string | null;
+    deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null;
     listings?: Prisma.ListingListRelationFilter;
     bookings?: Prisma.BookingListRelationFilter;
     paymentMethods?: Prisma.PaymentMethodListRelationFilter;
@@ -144,6 +152,7 @@ export type UserOrderByWithRelationInput = {
     isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrderInput | Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     listings?: Prisma.ListingOrderByRelationAggregateInput;
     bookings?: Prisma.BookingOrderByRelationAggregateInput;
     paymentMethods?: Prisma.PaymentMethodOrderByRelationAggregateInput;
@@ -163,6 +172,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
     isSuspended?: Prisma.BoolFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableFilter<"User"> | string | null;
+    deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null;
     listings?: Prisma.ListingListRelationFilter;
     bookings?: Prisma.BookingListRelationFilter;
     paymentMethods?: Prisma.PaymentMethodListRelationFilter;
@@ -179,6 +189,7 @@ export type UserOrderByWithAggregationInput = {
     isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrderInput | Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
     _count?: Prisma.UserCountOrderByAggregateInput;
     _max?: Prisma.UserMaxOrderByAggregateInput;
     _min?: Prisma.UserMinOrderByAggregateInput;
@@ -196,6 +207,7 @@ export type UserScalarWhereWithAggregatesInput = {
     isSuspended?: Prisma.BoolWithAggregatesFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
+    deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null;
 };
 export type UserCreateInput = {
     id?: string;
@@ -207,6 +219,7 @@ export type UserCreateInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodCreateNestedManyWithoutUserInput;
@@ -223,6 +236,7 @@ export type UserUncheckedCreateInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedCreateNestedManyWithoutUserInput;
@@ -239,6 +253,7 @@ export type UserUpdateInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUpdateManyWithoutUserNestedInput;
@@ -255,6 +270,7 @@ export type UserUncheckedUpdateInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedUpdateManyWithoutUserNestedInput;
@@ -271,6 +287,7 @@ export type UserCreateManyInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
 };
 export type UserUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -282,6 +299,7 @@ export type UserUpdateManyMutationInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
 };
 export type UserUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -293,6 +311,7 @@ export type UserUncheckedUpdateManyInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
 };
 export type UserCountOrderByAggregateInput = {
     id?: Prisma.SortOrder;
@@ -304,6 +323,7 @@ export type UserCountOrderByAggregateInput = {
     isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
 };
 export type UserMaxOrderByAggregateInput = {
     id?: Prisma.SortOrder;
@@ -315,6 +335,7 @@ export type UserMaxOrderByAggregateInput = {
     isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
 };
 export type UserMinOrderByAggregateInput = {
     id?: Prisma.SortOrder;
@@ -326,6 +347,7 @@ export type UserMinOrderByAggregateInput = {
     isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
+    deletedAt?: Prisma.SortOrder;
 };
 export type UserScalarRelationFilter = {
     is?: Prisma.UserWhereInput;
@@ -342,6 +364,9 @@ export type DateTimeFieldUpdateOperationsInput = {
 };
 export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null;
+};
+export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null;
 };
 export type UserCreateNestedOneWithoutListingsInput = {
     create?: Prisma.XOR<Prisma.UserCreateWithoutListingsInput, Prisma.UserUncheckedCreateWithoutListingsInput>;
@@ -413,6 +438,7 @@ export type UserCreateWithoutListingsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodCreateNestedManyWithoutUserInput;
     messages?: Prisma.MessageCreateNestedManyWithoutSenderInput;
@@ -428,6 +454,7 @@ export type UserUncheckedCreateWithoutListingsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedCreateNestedManyWithoutUserInput;
     messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput;
@@ -456,6 +483,7 @@ export type UserUpdateWithoutListingsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUpdateManyWithoutUserNestedInput;
     messages?: Prisma.MessageUpdateManyWithoutSenderNestedInput;
@@ -471,6 +499,7 @@ export type UserUncheckedUpdateWithoutListingsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedUpdateManyWithoutUserNestedInput;
     messages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput;
@@ -486,6 +515,7 @@ export type UserCreateWithoutBookingsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
     paymentMethods?: Prisma.PaymentMethodCreateNestedManyWithoutUserInput;
     messages?: Prisma.MessageCreateNestedManyWithoutSenderInput;
@@ -501,6 +531,7 @@ export type UserUncheckedCreateWithoutBookingsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedCreateNestedManyWithoutUserInput;
     messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput;
@@ -529,6 +560,7 @@ export type UserUpdateWithoutBookingsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
     paymentMethods?: Prisma.PaymentMethodUpdateManyWithoutUserNestedInput;
     messages?: Prisma.MessageUpdateManyWithoutSenderNestedInput;
@@ -544,6 +576,7 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedUpdateManyWithoutUserNestedInput;
     messages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput;
@@ -559,6 +592,7 @@ export type UserCreateWithoutPaymentMethodsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
     messages?: Prisma.MessageCreateNestedManyWithoutSenderInput;
@@ -574,6 +608,7 @@ export type UserUncheckedCreateWithoutPaymentMethodsInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
     messages?: Prisma.MessageUncheckedCreateNestedManyWithoutSenderInput;
@@ -602,6 +637,7 @@ export type UserUpdateWithoutPaymentMethodsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
     messages?: Prisma.MessageUpdateManyWithoutSenderNestedInput;
@@ -617,6 +653,7 @@ export type UserUncheckedUpdateWithoutPaymentMethodsInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
     messages?: Prisma.MessageUncheckedUpdateManyWithoutSenderNestedInput;
@@ -632,6 +669,7 @@ export type UserCreateWithoutMessageThreadsAsRenterInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodCreateNestedManyWithoutUserInput;
@@ -647,6 +685,7 @@ export type UserUncheckedCreateWithoutMessageThreadsAsRenterInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedCreateNestedManyWithoutUserInput;
@@ -675,6 +714,7 @@ export type UserUpdateWithoutMessageThreadsAsRenterInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUpdateManyWithoutUserNestedInput;
@@ -690,6 +730,7 @@ export type UserUncheckedUpdateWithoutMessageThreadsAsRenterInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedUpdateManyWithoutUserNestedInput;
@@ -705,6 +746,7 @@ export type UserCreateWithoutMessagesInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodCreateNestedManyWithoutUserInput;
@@ -720,6 +762,7 @@ export type UserUncheckedCreateWithoutMessagesInput = {
     isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
+    deletedAt?: Date | string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedCreateNestedManyWithoutUserInput;
@@ -748,6 +791,7 @@ export type UserUpdateWithoutMessagesInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUpdateManyWithoutUserNestedInput;
@@ -763,6 +807,7 @@ export type UserUncheckedUpdateWithoutMessagesInput = {
     isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
     paymentMethods?: Prisma.PaymentMethodUncheckedUpdateManyWithoutUserNestedInput;
@@ -810,6 +855,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
     isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
+    deletedAt?: boolean;
     listings?: boolean | Prisma.User$listingsArgs<ExtArgs>;
     bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>;
     paymentMethods?: boolean | Prisma.User$paymentMethodsArgs<ExtArgs>;
@@ -827,6 +873,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
+    deletedAt?: boolean;
 }, ExtArgs["result"]["user"]>;
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
     id?: boolean;
@@ -838,6 +885,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
+    deletedAt?: boolean;
 }, ExtArgs["result"]["user"]>;
 export type UserSelectScalar = {
     id?: boolean;
@@ -849,8 +897,9 @@ export type UserSelectScalar = {
     isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
+    deletedAt?: boolean;
 };
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "initials" | "isOwner" | "isSuspended" | "memberSince" | "responseTime", ExtArgs["result"]["user"]>;
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "initials" | "isOwner" | "isSuspended" | "memberSince" | "responseTime" | "deletedAt", ExtArgs["result"]["user"]>;
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     listings?: boolean | Prisma.User$listingsArgs<ExtArgs>;
     bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>;
@@ -880,6 +929,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
         isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
+        deletedAt: Date | null;
     }, ExtArgs["result"]["user"]>;
     composites: {};
 };
@@ -951,6 +1001,7 @@ export interface UserFieldRefs {
     readonly isSuspended: Prisma.FieldRef<"User", 'Boolean'>;
     readonly memberSince: Prisma.FieldRef<"User", 'DateTime'>;
     readonly responseTime: Prisma.FieldRef<"User", 'String'>;
+    readonly deletedAt: Prisma.FieldRef<"User", 'DateTime'>;
 }
 export type UserFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     select?: Prisma.UserSelect<ExtArgs> | null;
