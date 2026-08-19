@@ -85,6 +85,10 @@ model Listing {
   location    String
   pricePerDay Decimal         @db.Decimal(10, 2)
   description String          @db.Text
+  // ponytail: images stored as data URLs, no object storage. Fine for
+  // mock/dev scale; move to S3/R2 + store URLs here if photo count/size
+  // grows.
+  images      String[]        @default([])
   status      ListingStatus   @default(pending)
   createdAt   DateTime        @default(now())
 
