@@ -22,14 +22,23 @@ let AdminDisputesController = class AdminDisputesController {
     constructor(disputesService) {
         this.disputesService = disputesService;
     }
+    findAll() {
+        return this.disputesService.findAllForAdmin();
+    }
     findById(id) {
-        return this.disputesService.findById(id);
+        return this.disputesService.findByIdForAdmin(id);
     }
     updateStatus(id, dto) {
         return this.disputesService.updateStatus(id, dto);
     }
 };
 exports.AdminDisputesController = AdminDisputesController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminDisputesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

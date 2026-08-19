@@ -1,6 +1,9 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Query,
@@ -30,6 +33,12 @@ export class AdminController {
     return this.adminService.reinstateUser(id);
   }
 
+  @Delete('users/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
+  }
+
   @Get('bookings')
   findAllBookings() {
     return this.adminService.findAllBookings();
@@ -43,5 +52,11 @@ export class AdminController {
   @Get('listings/:id')
   findListingById(@Param('id') id: string) {
     return this.adminService.findListingById(id);
+  }
+
+  @Delete('listings/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteListing(@Param('id') id: string) {
+    return this.adminService.deleteListing(id);
   }
 }

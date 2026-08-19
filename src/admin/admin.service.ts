@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListingStatus } from '../../generated/prisma/enums';
 
@@ -30,6 +34,26 @@ export class AdminService {
     });
     const { passwordHash: _passwordHash, ...rest } = user;
     return rest;
+  }
+
+  async deleteUser(id: string) {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('User not found');
+
+    const hasBookingHistory = await this.prisma.booking.findFirst({
+      where: { OR: [{ renterId: id }, { listing: { ownerId: id } }] },
+    });
+    if (hasBookingHistory) {
+      throw new ConflictException(
+        'This user has booking history and cannot be deleted',
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.paymentMethod.deleteMany({ where: { userId: id } }),
+      this.prisma.listing.deleteMany({ where: { ownerId: id } }),
+      this.prisma.user.delete({ where: { id } }),
+    ]);
   }
 
   async findAllBookings() {
@@ -68,5 +92,21 @@ export class AdminService {
     const { owner, ...rest } = listing;
     const { passwordHash: _passwordHash, ...ownerRest } = owner;
     return { ...rest, owner: ownerRest };
+  }
+
+  async deleteListing(id: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('Listing not found');
+
+    const activeBooking = await this.prisma.booking.findFirst({
+      where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
+    });
+    if (activeBooking) {
+      throw new ConflictException(
+        'This listing has an active booking and cannot be deleted',
+      );
+    }
+
+    await this.prisma.listing.delete({ where: { id } });
   }
 }

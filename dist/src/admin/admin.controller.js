@@ -25,11 +25,26 @@ let AdminController = class AdminController {
     findAllUsers() {
         return this.adminService.findAllUsers();
     }
+    suspendUser(id) {
+        return this.adminService.suspendUser(id);
+    }
+    reinstateUser(id) {
+        return this.adminService.reinstateUser(id);
+    }
+    deleteUser(id) {
+        return this.adminService.deleteUser(id);
+    }
     findAllBookings() {
         return this.adminService.findAllBookings();
     }
     findAllListings(status) {
         return this.adminService.findAllListings(status);
+    }
+    findListingById(id) {
+        return this.adminService.findListingById(id);
+    }
+    deleteListing(id) {
+        return this.adminService.deleteListing(id);
     }
 };
 exports.AdminController = AdminController;
@@ -39,6 +54,28 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "findAllUsers", null);
+__decorate([
+    (0, common_1.Patch)('users/:id/suspend'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "suspendUser", null);
+__decorate([
+    (0, common_1.Patch)('users/:id/reinstate'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "reinstateUser", null);
+__decorate([
+    (0, common_1.Delete)('users/:id'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.Get)('bookings'),
     __metadata("design:type", Function),
@@ -52,6 +89,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "findAllListings", null);
+__decorate([
+    (0, common_1.Get)('listings/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "findListingById", null);
+__decorate([
+    (0, common_1.Delete)('listings/:id'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteListing", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.UseGuards)(jwt_admin_auth_guard_1.JwtAdminAuthGuard),
     (0, common_1.Controller)('admin'),

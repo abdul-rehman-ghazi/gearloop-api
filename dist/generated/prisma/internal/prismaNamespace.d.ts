@@ -814,6 +814,7 @@ export declare const UserScalarFieldEnum: {
     readonly passwordHash: "passwordHash";
     readonly initials: "initials";
     readonly isOwner: "isOwner";
+    readonly isSuspended: "isSuspended";
     readonly memberSince: "memberSince";
     readonly responseTime: "responseTime";
 };

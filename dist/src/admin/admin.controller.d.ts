@@ -9,9 +9,31 @@ export declare class AdminController {
         email: string;
         initials: string;
         isOwner: boolean;
+        isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
     }[]>;
+    suspendUser(id: string): Promise<{
+        id: string;
+        name: string;
+        email: string;
+        initials: string;
+        isOwner: boolean;
+        isSuspended: boolean;
+        memberSince: Date;
+        responseTime: string | null;
+    }>;
+    reinstateUser(id: string): Promise<{
+        id: string;
+        name: string;
+        email: string;
+        initials: string;
+        isOwner: boolean;
+        isSuspended: boolean;
+        memberSince: Date;
+        responseTime: string | null;
+    }>;
+    deleteUser(id: string): Promise<void>;
     findAllBookings(): Promise<{
         renter: {
             id: string;
@@ -19,6 +41,7 @@ export declare class AdminController {
             email: string;
             initials: string;
             isOwner: boolean;
+            isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
         };
@@ -58,6 +81,7 @@ export declare class AdminController {
             email: string;
             initials: string;
             isOwner: boolean;
+            isSuspended: boolean;
             memberSince: Date;
             responseTime: string | null;
         };
@@ -71,4 +95,26 @@ export declare class AdminController {
         createdAt: Date;
         ownerId: string;
     }[]>;
+    findListingById(id: string): Promise<{
+        owner: {
+            id: string;
+            name: string;
+            email: string;
+            initials: string;
+            isOwner: boolean;
+            isSuspended: boolean;
+            memberSince: Date;
+            responseTime: string | null;
+        };
+        id: string;
+        title: string;
+        category: import("../../generated/prisma/enums").ListingCategory;
+        location: string;
+        pricePerDay: import("@prisma/client-runtime-utils").Decimal;
+        description: string;
+        status: ListingStatus;
+        createdAt: Date;
+        ownerId: string;
+    }>;
+    deleteListing(id: string): Promise<void>;
 }

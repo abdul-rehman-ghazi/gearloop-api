@@ -68,6 +68,44 @@ let DisputesService = class DisputesService {
             data: { status: dto.status },
         });
     }
+    async findAllForAdmin() {
+        const disputes = await this.prisma.dispute.findMany({
+            include: {
+                booking: {
+                    include: { renter: true, listing: { include: { owner: true } } },
+                },
+            },
+            orderBy: { booking: { createdAt: 'desc' } },
+        });
+        return disputes.map((d) => this.sanitizeForAdmin(d));
+    }
+    async findByIdForAdmin(id) {
+        const dispute = await this.prisma.dispute.findUnique({
+            where: { id },
+            include: {
+                booking: {
+                    include: { renter: true, listing: { include: { owner: true } } },
+                },
+            },
+        });
+        if (!dispute)
+            throw new common_1.NotFoundException('Dispute not found');
+        return this.sanitizeForAdmin(dispute);
+    }
+    sanitizeForAdmin(dispute) {
+        const { renter, listing, ...bookingRest } = dispute.booking;
+        const { owner, ...listingRest } = listing;
+        const { passwordHash: _renterHash, ...renterRest } = renter;
+        const { passwordHash: _ownerHash, ...ownerRest } = owner;
+        return {
+            ...dispute,
+            booking: {
+                ...bookingRest,
+                renter: renterRest,
+                listing: { ...listingRest, owner: ownerRest },
+            },
+        };
+    }
 };
 exports.DisputesService = DisputesService;
 exports.DisputesService = DisputesService = __decorate([

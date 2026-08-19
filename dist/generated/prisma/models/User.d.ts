@@ -13,6 +13,7 @@ export type UserMinAggregateOutputType = {
     passwordHash: string | null;
     initials: string | null;
     isOwner: boolean | null;
+    isSuspended: boolean | null;
     memberSince: Date | null;
     responseTime: string | null;
 };
@@ -23,6 +24,7 @@ export type UserMaxAggregateOutputType = {
     passwordHash: string | null;
     initials: string | null;
     isOwner: boolean | null;
+    isSuspended: boolean | null;
     memberSince: Date | null;
     responseTime: string | null;
 };
@@ -33,6 +35,7 @@ export type UserCountAggregateOutputType = {
     passwordHash: number;
     initials: number;
     isOwner: number;
+    isSuspended: number;
     memberSince: number;
     responseTime: number;
     _all: number;
@@ -44,6 +47,7 @@ export type UserMinAggregateInputType = {
     passwordHash?: true;
     initials?: true;
     isOwner?: true;
+    isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
 };
@@ -54,6 +58,7 @@ export type UserMaxAggregateInputType = {
     passwordHash?: true;
     initials?: true;
     isOwner?: true;
+    isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
 };
@@ -64,6 +69,7 @@ export type UserCountAggregateInputType = {
     passwordHash?: true;
     initials?: true;
     isOwner?: true;
+    isSuspended?: true;
     memberSince?: true;
     responseTime?: true;
     _all?: true;
@@ -99,6 +105,7 @@ export type UserGroupByOutputType = {
     passwordHash: string;
     initials: string;
     isOwner: boolean;
+    isSuspended: boolean;
     memberSince: Date;
     responseTime: string | null;
     _count: UserCountAggregateOutputType | null;
@@ -118,6 +125,7 @@ export type UserWhereInput = {
     passwordHash?: Prisma.StringFilter<"User"> | string;
     initials?: Prisma.StringFilter<"User"> | string;
     isOwner?: Prisma.BoolFilter<"User"> | boolean;
+    isSuspended?: Prisma.BoolFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableFilter<"User"> | string | null;
     listings?: Prisma.ListingListRelationFilter;
@@ -133,6 +141,7 @@ export type UserOrderByWithRelationInput = {
     passwordHash?: Prisma.SortOrder;
     initials?: Prisma.SortOrder;
     isOwner?: Prisma.SortOrder;
+    isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrderInput | Prisma.SortOrder;
     listings?: Prisma.ListingOrderByRelationAggregateInput;
@@ -151,6 +160,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
     passwordHash?: Prisma.StringFilter<"User"> | string;
     initials?: Prisma.StringFilter<"User"> | string;
     isOwner?: Prisma.BoolFilter<"User"> | boolean;
+    isSuspended?: Prisma.BoolFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableFilter<"User"> | string | null;
     listings?: Prisma.ListingListRelationFilter;
@@ -166,6 +176,7 @@ export type UserOrderByWithAggregationInput = {
     passwordHash?: Prisma.SortOrder;
     initials?: Prisma.SortOrder;
     isOwner?: Prisma.SortOrder;
+    isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrderInput | Prisma.SortOrder;
     _count?: Prisma.UserCountOrderByAggregateInput;
@@ -182,6 +193,7 @@ export type UserScalarWhereWithAggregatesInput = {
     passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string;
     initials?: Prisma.StringWithAggregatesFilter<"User"> | string;
     isOwner?: Prisma.BoolWithAggregatesFilter<"User"> | boolean;
+    isSuspended?: Prisma.BoolWithAggregatesFilter<"User"> | boolean;
     memberSince?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
     responseTime?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
 };
@@ -192,6 +204,7 @@ export type UserCreateInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
@@ -207,6 +220,7 @@ export type UserUncheckedCreateInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
@@ -222,6 +236,7 @@ export type UserUpdateInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
@@ -237,6 +252,7 @@ export type UserUncheckedUpdateInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
@@ -252,6 +268,7 @@ export type UserCreateManyInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
 };
@@ -262,6 +279,7 @@ export type UserUpdateManyMutationInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
@@ -272,6 +290,7 @@ export type UserUncheckedUpdateManyInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
@@ -282,6 +301,7 @@ export type UserCountOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     initials?: Prisma.SortOrder;
     isOwner?: Prisma.SortOrder;
+    isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
 };
@@ -292,6 +312,7 @@ export type UserMaxOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     initials?: Prisma.SortOrder;
     isOwner?: Prisma.SortOrder;
+    isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
 };
@@ -302,6 +323,7 @@ export type UserMinOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     initials?: Prisma.SortOrder;
     isOwner?: Prisma.SortOrder;
+    isSuspended?: Prisma.SortOrder;
     memberSince?: Prisma.SortOrder;
     responseTime?: Prisma.SortOrder;
 };
@@ -388,6 +410,7 @@ export type UserCreateWithoutListingsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     bookings?: Prisma.BookingCreateNestedManyWithoutRenterInput;
@@ -402,6 +425,7 @@ export type UserUncheckedCreateWithoutListingsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput;
@@ -429,6 +453,7 @@ export type UserUpdateWithoutListingsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookings?: Prisma.BookingUpdateManyWithoutRenterNestedInput;
@@ -443,6 +468,7 @@ export type UserUncheckedUpdateWithoutListingsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput;
@@ -457,6 +483,7 @@ export type UserCreateWithoutBookingsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
@@ -471,6 +498,7 @@ export type UserUncheckedCreateWithoutBookingsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
@@ -498,6 +526,7 @@ export type UserUpdateWithoutBookingsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
@@ -512,6 +541,7 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
@@ -526,6 +556,7 @@ export type UserCreateWithoutPaymentMethodsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
@@ -540,6 +571,7 @@ export type UserUncheckedCreateWithoutPaymentMethodsInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
@@ -567,6 +599,7 @@ export type UserUpdateWithoutPaymentMethodsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
@@ -581,6 +614,7 @@ export type UserUncheckedUpdateWithoutPaymentMethodsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
@@ -595,6 +629,7 @@ export type UserCreateWithoutMessageThreadsAsRenterInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
@@ -609,6 +644,7 @@ export type UserUncheckedCreateWithoutMessageThreadsAsRenterInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
@@ -636,6 +672,7 @@ export type UserUpdateWithoutMessageThreadsAsRenterInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
@@ -650,6 +687,7 @@ export type UserUncheckedUpdateWithoutMessageThreadsAsRenterInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
@@ -664,6 +702,7 @@ export type UserCreateWithoutMessagesInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput;
@@ -678,6 +717,7 @@ export type UserUncheckedCreateWithoutMessagesInput = {
     passwordHash: string;
     initials: string;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: Date | string;
     responseTime?: string | null;
     listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput;
@@ -705,6 +745,7 @@ export type UserUpdateWithoutMessagesInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput;
@@ -719,6 +760,7 @@ export type UserUncheckedUpdateWithoutMessagesInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     initials?: Prisma.StringFieldUpdateOperationsInput | string;
     isOwner?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+    isSuspended?: Prisma.BoolFieldUpdateOperationsInput | boolean;
     memberSince?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     responseTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput;
@@ -765,6 +807,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
     passwordHash?: boolean;
     initials?: boolean;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
     listings?: boolean | Prisma.User$listingsArgs<ExtArgs>;
@@ -781,6 +824,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     passwordHash?: boolean;
     initials?: boolean;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
 }, ExtArgs["result"]["user"]>;
@@ -791,6 +835,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     passwordHash?: boolean;
     initials?: boolean;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
 }, ExtArgs["result"]["user"]>;
@@ -801,10 +846,11 @@ export type UserSelectScalar = {
     passwordHash?: boolean;
     initials?: boolean;
     isOwner?: boolean;
+    isSuspended?: boolean;
     memberSince?: boolean;
     responseTime?: boolean;
 };
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "initials" | "isOwner" | "memberSince" | "responseTime", ExtArgs["result"]["user"]>;
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "initials" | "isOwner" | "isSuspended" | "memberSince" | "responseTime", ExtArgs["result"]["user"]>;
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     listings?: boolean | Prisma.User$listingsArgs<ExtArgs>;
     bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>;
@@ -831,6 +877,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
         passwordHash: string;
         initials: string;
         isOwner: boolean;
+        isSuspended: boolean;
         memberSince: Date;
         responseTime: string | null;
     }, ExtArgs["result"]["user"]>;
@@ -901,6 +948,7 @@ export interface UserFieldRefs {
     readonly passwordHash: Prisma.FieldRef<"User", 'String'>;
     readonly initials: Prisma.FieldRef<"User", 'String'>;
     readonly isOwner: Prisma.FieldRef<"User", 'Boolean'>;
+    readonly isSuspended: Prisma.FieldRef<"User", 'Boolean'>;
     readonly memberSince: Prisma.FieldRef<"User", 'DateTime'>;
     readonly responseTime: Prisma.FieldRef<"User", 'String'>;
 }

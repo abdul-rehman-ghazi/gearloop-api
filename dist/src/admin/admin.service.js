@@ -23,6 +23,39 @@ let AdminService = class AdminService {
         });
         return users.map(({ passwordHash: _passwordHash, ...rest }) => rest);
     }
+    async suspendUser(id) {
+        return this.setUserSuspended(id, true);
+    }
+    async reinstateUser(id) {
+        return this.setUserSuspended(id, false);
+    }
+    async setUserSuspended(id, isSuspended) {
+        const existing = await this.prisma.user.findUnique({ where: { id } });
+        if (!existing)
+            throw new common_1.NotFoundException('User not found');
+        const user = await this.prisma.user.update({
+            where: { id },
+            data: { isSuspended },
+        });
+        const { passwordHash: _passwordHash, ...rest } = user;
+        return rest;
+    }
+    async deleteUser(id) {
+        const existing = await this.prisma.user.findUnique({ where: { id } });
+        if (!existing)
+            throw new common_1.NotFoundException('User not found');
+        const hasBookingHistory = await this.prisma.booking.findFirst({
+            where: { OR: [{ renterId: id }, { listing: { ownerId: id } }] },
+        });
+        if (hasBookingHistory) {
+            throw new common_1.ConflictException('This user has booking history and cannot be deleted');
+        }
+        await this.prisma.$transaction([
+            this.prisma.paymentMethod.deleteMany({ where: { userId: id } }),
+            this.prisma.listing.deleteMany({ where: { ownerId: id } }),
+            this.prisma.user.delete({ where: { id } }),
+        ]);
+    }
     async findAllBookings() {
         const bookings = await this.prisma.booking.findMany({
             include: { listing: true, renter: true },
@@ -43,6 +76,29 @@ let AdminService = class AdminService {
             ...listing,
             owner,
         }));
+    }
+    async findListingById(id) {
+        const listing = await this.prisma.listing.findUnique({
+            where: { id },
+            include: { owner: true },
+        });
+        if (!listing)
+            throw new common_1.NotFoundException('Listing not found');
+        const { owner, ...rest } = listing;
+        const { passwordHash: _passwordHash, ...ownerRest } = owner;
+        return { ...rest, owner: ownerRest };
+    }
+    async deleteListing(id) {
+        const listing = await this.prisma.listing.findUnique({ where: { id } });
+        if (!listing)
+            throw new common_1.NotFoundException('Listing not found');
+        const activeBooking = await this.prisma.booking.findFirst({
+            where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
+        });
+        if (activeBooking) {
+            throw new common_1.ConflictException('This listing has an active booking and cannot be deleted');
+        }
+        await this.prisma.listing.delete({ where: { id } });
     }
 };
 exports.AdminService = AdminService;

@@ -82,6 +82,7 @@ exports.UserScalarFieldEnum = {
     passwordHash: 'passwordHash',
     initials: 'initials',
     isOwner: 'isOwner',
+    isSuspended: 'isSuspended',
     memberSince: 'memberSince',
     responseTime: 'responseTime'
 };
