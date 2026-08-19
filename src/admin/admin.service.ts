@@ -13,6 +13,25 @@ export class AdminService {
     return users.map(({ passwordHash: _passwordHash, ...rest }) => rest);
   }
 
+  async suspendUser(id: string) {
+    return this.setUserSuspended(id, true);
+  }
+
+  async reinstateUser(id: string) {
+    return this.setUserSuspended(id, false);
+  }
+
+  private async setUserSuspended(id: string, isSuspended: boolean) {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('User not found');
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { isSuspended },
+    });
+    const { passwordHash: _passwordHash, ...rest } = user;
+    return rest;
+  }
+
   async findAllBookings() {
     const bookings = await this.prisma.booking.findMany({
       include: { listing: true, renter: true },

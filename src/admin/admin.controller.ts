@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAdminAuthGuard } from '../auth/guards/jwt-admin-auth.guard';
 import { ListingStatus } from '../../generated/prisma/enums';
@@ -11,6 +18,16 @@ export class AdminController {
   @Get('users')
   findAllUsers() {
     return this.adminService.findAllUsers();
+  }
+
+  @Patch('users/:id/suspend')
+  suspendUser(@Param('id') id: string) {
+    return this.adminService.suspendUser(id);
+  }
+
+  @Patch('users/:id/reinstate')
+  reinstateUser(@Param('id') id: string) {
+    return this.adminService.reinstateUser(id);
   }
 
   @Get('bookings')

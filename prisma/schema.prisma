@@ -65,6 +65,7 @@ model User {
   // listing — this replaces a renter/owner enum so one account can do both,
   // matching the "same account, role-based" decision from the design phase.
   isOwner       Boolean  @default(false)
+  isSuspended   Boolean  @default(false)
   memberSince   DateTime @default(now())
   responseTime  String?
 
