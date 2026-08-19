@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListingStatus } from '../../generated/prisma/enums';
 
@@ -38,5 +38,16 @@ export class AdminService {
         owner,
       }),
     );
+  }
+
+  async findListingById(id: string) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id },
+      include: { owner: true },
+    });
+    if (!listing) throw new NotFoundException('Listing not found');
+    const { owner, ...rest } = listing;
+    const { passwordHash: _passwordHash, ...ownerRest } = owner;
+    return { ...rest, owner: ownerRest };
   }
 }
