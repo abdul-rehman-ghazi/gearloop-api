@@ -59,6 +59,13 @@ let ListingsService = class ListingsService {
             throw new common_1.NotFoundException('Listing not found');
         return listing;
     }
+    async getBookedRanges(id) {
+        await this.findById(id);
+        return this.prisma.booking.findMany({
+            where: { listingId: id, status: 'confirmed' },
+            select: { startDate: true, endDate: true },
+        });
+    }
     async update(id, ownerId, dto) {
         await this.assertOwnership(id, ownerId);
         return this.prisma.listing.update({ where: { id }, data: dto });

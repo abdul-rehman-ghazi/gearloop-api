@@ -41,6 +41,10 @@ export declare class ListingsService {
         createdAt: Date;
         ownerId: string;
     }>;
+    getBookedRanges(id: string): Promise<{
+        startDate: Date;
+        endDate: Date;
+    }[]>;
     update(id: string, ownerId: string, dto: UpdateListingDto): Promise<{
         id: string;
         title: string;

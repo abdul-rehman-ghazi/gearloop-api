@@ -30,6 +30,10 @@ export declare class ListingsController {
         createdAt: Date;
         ownerId: string;
     }[]>;
+    getBookedRanges(id: string): Promise<{
+        startDate: Date;
+        endDate: Date;
+    }[]>;
     findById(id: string): Promise<{
         id: string;
         title: string;

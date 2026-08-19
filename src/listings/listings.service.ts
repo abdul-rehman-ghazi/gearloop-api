@@ -64,6 +64,14 @@ export class ListingsService {
     return listing;
   }
 
+  async getBookedRanges(id: string) {
+    await this.findById(id);
+    return this.prisma.booking.findMany({
+      where: { listingId: id, status: 'confirmed' },
+      select: { startDate: true, endDate: true },
+    });
+  }
+
   async update(id: string, ownerId: string, dto: UpdateListingDto) {
     await this.assertOwnership(id, ownerId);
     return this.prisma.listing.update({ where: { id }, data: dto });

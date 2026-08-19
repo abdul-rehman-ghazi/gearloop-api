@@ -32,6 +32,9 @@ let ListingsController = class ListingsController {
     findAll(dto, user) {
         return this.listingsService.findAll(dto, user?.userId);
     }
+    getBookedRanges(id) {
+        return this.listingsService.getBookedRanges(id);
+    }
     findById(id) {
         return this.listingsService.findById(id);
     }
@@ -67,6 +70,13 @@ __decorate([
     __metadata("design:paramtypes", [search_listings_dto_1.SearchListingsDto, Object]),
     __metadata("design:returntype", void 0)
 ], ListingsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id/booked-ranges'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ListingsController.prototype, "getBookedRanges", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

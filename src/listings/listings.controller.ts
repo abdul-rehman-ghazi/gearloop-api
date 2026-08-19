@@ -39,6 +39,11 @@ export class ListingsController {
     return this.listingsService.findAll(dto, user?.userId);
   }
 
+  @Get(':id/booked-ranges')
+  getBookedRanges(@Param('id') id: string) {
+    return this.listingsService.getBookedRanges(id);
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.listingsService.findById(id);
