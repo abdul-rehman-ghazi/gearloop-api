@@ -68,4 +68,56 @@ export class DisputesService {
       data: { status: dto.status },
     });
   }
+
+  async findAllForAdmin() {
+    const disputes = await this.prisma.dispute.findMany({
+      include: {
+        booking: {
+          include: { renter: true, listing: { include: { owner: true } } },
+        },
+      },
+      orderBy: { booking: { createdAt: 'desc' } },
+    });
+    return disputes.map((d) => this.sanitizeForAdmin(d));
+  }
+
+  async findByIdForAdmin(id: string) {
+    const dispute = await this.prisma.dispute.findUnique({
+      where: { id },
+      include: {
+        booking: {
+          include: { renter: true, listing: { include: { owner: true } } },
+        },
+      },
+    });
+    if (!dispute) throw new NotFoundException('Dispute not found');
+    return this.sanitizeForAdmin(dispute);
+  }
+
+  private sanitizeForAdmin<
+    T extends {
+      booking: {
+        renter: { passwordHash: string; [key: string]: unknown };
+        listing: {
+          owner: { passwordHash: string; [key: string]: unknown };
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    },
+  >(dispute: T) {
+    const { renter, listing, ...bookingRest } = dispute.booking;
+    const { owner, ...listingRest } = listing;
+    const { passwordHash: _renterHash, ...renterRest } = renter;
+    const { passwordHash: _ownerHash, ...ownerRest } = owner;
+    return {
+      ...dispute,
+      booking: {
+        ...bookingRest,
+        renter: renterRest,
+        listing: { ...listingRest, owner: ownerRest },
+      },
+    };
+  }
 }

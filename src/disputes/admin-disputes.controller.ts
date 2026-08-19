@@ -8,9 +8,14 @@ import { JwtAdminAuthGuard } from '../auth/guards/jwt-admin-auth.guard';
 export class AdminDisputesController {
   constructor(private readonly disputesService: DisputesService) {}
 
+  @Get()
+  findAll() {
+    return this.disputesService.findAllForAdmin();
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
-    return this.disputesService.findById(id);
+    return this.disputesService.findByIdForAdmin(id);
   }
 
   @Patch(':id/status')
