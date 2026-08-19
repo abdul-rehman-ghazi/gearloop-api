@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const initials_util_1 = require("../auth/utils/initials.util");
 let AdminService = class AdminService {
     prisma;
     constructor(prisma) {
@@ -36,6 +37,27 @@ let AdminService = class AdminService {
         const user = await this.prisma.user.update({
             where: { id },
             data: { isSuspended },
+        });
+        const { passwordHash: _passwordHash, ...rest } = user;
+        return rest;
+    }
+    async updateUser(id, dto) {
+        const existing = await this.prisma.user.findUnique({ where: { id } });
+        if (!existing)
+            throw new common_1.NotFoundException('User not found');
+        if (dto.email && dto.email !== existing.email) {
+            const emailTaken = await this.prisma.user.findUnique({
+                where: { email: dto.email },
+            });
+            if (emailTaken)
+                throw new common_1.ConflictException('Email is already in use');
+        }
+        const user = await this.prisma.user.update({
+            where: { id },
+            data: {
+                ...dto,
+                ...(dto.name && { initials: (0, initials_util_1.computeInitials)(dto.name) }),
+            },
         });
         const { passwordHash: _passwordHash, ...rest } = user;
         return rest;
@@ -84,6 +106,19 @@ let AdminService = class AdminService {
         });
         if (!listing)
             throw new common_1.NotFoundException('Listing not found');
+        const { owner, ...rest } = listing;
+        const { passwordHash: _passwordHash, ...ownerRest } = owner;
+        return { ...rest, owner: ownerRest };
+    }
+    async updateListing(id, dto) {
+        const existing = await this.prisma.listing.findUnique({ where: { id } });
+        if (!existing)
+            throw new common_1.NotFoundException('Listing not found');
+        const listing = await this.prisma.listing.update({
+            where: { id },
+            data: dto,
+            include: { owner: true },
+        });
         const { owner, ...rest } = listing;
         const { passwordHash: _passwordHash, ...ownerRest } = owner;
         return { ...rest, owner: ownerRest };

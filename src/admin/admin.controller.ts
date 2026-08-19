@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -12,6 +13,8 @@ import {
 import { AdminService } from './admin.service';
 import { JwtAdminAuthGuard } from '../auth/guards/jwt-admin-auth.guard';
 import { ListingStatus } from '../../generated/prisma/enums';
+import { AdminUpdateUserDto } from './dto/update-user.dto';
+import { UpdateListingDto } from '../listings/dto/update-listing.dto';
 
 @UseGuards(JwtAdminAuthGuard)
 @Controller('admin')
@@ -33,6 +36,11 @@ export class AdminController {
     return this.adminService.reinstateUser(id);
   }
 
+  @Patch('users/:id')
+  updateUser(@Param('id') id: string, @Body() dto: AdminUpdateUserDto) {
+    return this.adminService.updateUser(id, dto);
+  }
+
   @Delete('users/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteUser(@Param('id') id: string) {
@@ -52,6 +60,11 @@ export class AdminController {
   @Get('listings/:id')
   findListingById(@Param('id') id: string) {
     return this.adminService.findListingById(id);
+  }
+
+  @Patch('listings/:id')
+  updateListing(@Param('id') id: string, @Body() dto: UpdateListingDto) {
+    return this.adminService.updateListing(id, dto);
   }
 
   @Delete('listings/:id')

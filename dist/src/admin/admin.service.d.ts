@@ -1,5 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { ListingStatus } from '../../generated/prisma/enums';
+import { AdminUpdateUserDto } from './dto/update-user.dto';
+import { UpdateListingDto } from '../listings/dto/update-listing.dto';
 export declare class AdminService {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -34,6 +36,16 @@ export declare class AdminService {
         responseTime: string | null;
     }>;
     private setUserSuspended;
+    updateUser(id: string, dto: AdminUpdateUserDto): Promise<{
+        id: string;
+        name: string;
+        email: string;
+        initials: string;
+        isOwner: boolean;
+        isSuspended: boolean;
+        memberSince: Date;
+        responseTime: string | null;
+    }>;
     deleteUser(id: string): Promise<void>;
     findAllBookings(): Promise<{
         renter: {
@@ -53,6 +65,7 @@ export declare class AdminService {
             location: string;
             pricePerDay: import("@prisma/client-runtime-utils").Decimal;
             description: string;
+            images: string[];
             status: ListingStatus;
             createdAt: Date;
             ownerId: string;
@@ -92,6 +105,7 @@ export declare class AdminService {
         location: string;
         pricePerDay: import("@prisma/client-runtime-utils").Decimal;
         description: string;
+        images: string[];
         status: ListingStatus;
         createdAt: Date;
         ownerId: string;
@@ -113,6 +127,29 @@ export declare class AdminService {
         location: string;
         pricePerDay: import("@prisma/client-runtime-utils").Decimal;
         description: string;
+        images: string[];
+        status: ListingStatus;
+        createdAt: Date;
+        ownerId: string;
+    }>;
+    updateListing(id: string, dto: UpdateListingDto): Promise<{
+        owner: {
+            id: string;
+            name: string;
+            email: string;
+            initials: string;
+            isOwner: boolean;
+            isSuspended: boolean;
+            memberSince: Date;
+            responseTime: string | null;
+        };
+        id: string;
+        title: string;
+        category: import("../../generated/prisma/enums").ListingCategory;
+        location: string;
+        pricePerDay: import("@prisma/client-runtime-utils").Decimal;
+        description: string;
+        images: string[];
         status: ListingStatus;
         createdAt: Date;
         ownerId: string;

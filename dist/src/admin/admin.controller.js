@@ -17,6 +17,8 @@ const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
 const jwt_admin_auth_guard_1 = require("../auth/guards/jwt-admin-auth.guard");
 const enums_1 = require("../../generated/prisma/enums");
+const update_user_dto_1 = require("./dto/update-user.dto");
+const update_listing_dto_1 = require("../listings/dto/update-listing.dto");
 let AdminController = class AdminController {
     adminService;
     constructor(adminService) {
@@ -31,6 +33,9 @@ let AdminController = class AdminController {
     reinstateUser(id) {
         return this.adminService.reinstateUser(id);
     }
+    updateUser(id, dto) {
+        return this.adminService.updateUser(id, dto);
+    }
     deleteUser(id) {
         return this.adminService.deleteUser(id);
     }
@@ -42,6 +47,9 @@ let AdminController = class AdminController {
     }
     findListingById(id) {
         return this.adminService.findListingById(id);
+    }
+    updateListing(id, dto) {
+        return this.adminService.updateListing(id, dto);
     }
     deleteListing(id) {
         return this.adminService.deleteListing(id);
@@ -68,6 +76,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "reinstateUser", null);
+__decorate([
+    (0, common_1.Patch)('users/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_user_dto_1.AdminUpdateUserDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateUser", null);
 __decorate([
     (0, common_1.Delete)('users/:id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
@@ -96,6 +112,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "findListingById", null);
+__decorate([
+    (0, common_1.Patch)('listings/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_listing_dto_1.UpdateListingDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateListing", null);
 __decorate([
     (0, common_1.Delete)('listings/:id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),

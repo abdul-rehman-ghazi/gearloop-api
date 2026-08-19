@@ -5,6 +5,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListingStatus } from '../../generated/prisma/enums';
+import { AdminUpdateUserDto } from './dto/update-user.dto';
+import { UpdateListingDto } from '../listings/dto/update-listing.dto';
+import { computeInitials } from '../auth/utils/initials.util';
 
 @Injectable()
 export class AdminService {
@@ -31,6 +34,28 @@ export class AdminService {
     const user = await this.prisma.user.update({
       where: { id },
       data: { isSuspended },
+    });
+    const { passwordHash: _passwordHash, ...rest } = user;
+    return rest;
+  }
+
+  async updateUser(id: string, dto: AdminUpdateUserDto) {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('User not found');
+
+    if (dto.email && dto.email !== existing.email) {
+      const emailTaken = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+      if (emailTaken) throw new ConflictException('Email is already in use');
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(dto.name && { initials: computeInitials(dto.name) }),
+      },
     });
     const { passwordHash: _passwordHash, ...rest } = user;
     return rest;
@@ -89,6 +114,20 @@ export class AdminService {
       include: { owner: true },
     });
     if (!listing) throw new NotFoundException('Listing not found');
+    const { owner, ...rest } = listing;
+    const { passwordHash: _passwordHash, ...ownerRest } = owner;
+    return { ...rest, owner: ownerRest };
+  }
+
+  async updateListing(id: string, dto: UpdateListingDto) {
+    const existing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Listing not found');
+
+    const listing = await this.prisma.listing.update({
+      where: { id },
+      data: dto,
+      include: { owner: true },
+    });
     const { owner, ...rest } = listing;
     const { passwordHash: _passwordHash, ...ownerRest } = owner;
     return { ...rest, owner: ownerRest };

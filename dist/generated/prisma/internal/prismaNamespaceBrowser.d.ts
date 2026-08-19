@@ -47,6 +47,7 @@ export declare const ListingScalarFieldEnum: {
     readonly location: "location";
     readonly pricePerDay: "pricePerDay";
     readonly description: "description";
+    readonly images: "images";
     readonly status: "status";
     readonly createdAt: "createdAt";
     readonly ownerId: "ownerId";

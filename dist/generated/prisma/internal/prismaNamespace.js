@@ -93,6 +93,7 @@ exports.ListingScalarFieldEnum = {
     location: 'location',
     pricePerDay: 'pricePerDay',
     description: 'description',
+    images: 'images',
     status: 'status',
     createdAt: 'createdAt',
     ownerId: 'ownerId'

@@ -5,4 +5,5 @@ export declare class CreateListingDto {
     location: string;
     pricePerDay: number;
     description: string;
+    images?: string[];
 }

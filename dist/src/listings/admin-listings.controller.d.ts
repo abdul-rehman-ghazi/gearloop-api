@@ -9,6 +9,7 @@ export declare class AdminListingsController {
         location: string;
         pricePerDay: import("@prisma/client-runtime-utils").Decimal;
         description: string;
+        images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
         createdAt: Date;
         ownerId: string;
@@ -20,6 +21,7 @@ export declare class AdminListingsController {
         location: string;
         pricePerDay: import("@prisma/client-runtime-utils").Decimal;
         description: string;
+        images: string[];
         status: import("../../generated/prisma/enums").ListingStatus;
         createdAt: Date;
         ownerId: string;

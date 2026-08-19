@@ -44,6 +44,7 @@ export type ListingCountAggregateOutputType = {
     location: number;
     pricePerDay: number;
     description: number;
+    images: number;
     status: number;
     createdAt: number;
     ownerId: number;
@@ -84,6 +85,7 @@ export type ListingCountAggregateInputType = {
     location?: true;
     pricePerDay?: true;
     description?: true;
+    images?: true;
     status?: true;
     createdAt?: true;
     ownerId?: true;
@@ -124,6 +126,7 @@ export type ListingGroupByOutputType = {
     location: string;
     pricePerDay: runtime.Decimal;
     description: string;
+    images: string[];
     status: $Enums.ListingStatus;
     createdAt: Date;
     ownerId: string;
@@ -146,6 +149,7 @@ export type ListingWhereInput = {
     location?: Prisma.StringFilter<"Listing"> | string;
     pricePerDay?: Prisma.DecimalFilter<"Listing"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFilter<"Listing"> | string;
+    images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
@@ -160,6 +164,7 @@ export type ListingOrderByWithRelationInput = {
     location?: Prisma.SortOrder;
     pricePerDay?: Prisma.SortOrder;
     description?: Prisma.SortOrder;
+    images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
@@ -177,6 +182,7 @@ export type ListingWhereUniqueInput = Prisma.AtLeast<{
     location?: Prisma.StringFilter<"Listing"> | string;
     pricePerDay?: Prisma.DecimalFilter<"Listing"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFilter<"Listing"> | string;
+    images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
@@ -191,6 +197,7 @@ export type ListingOrderByWithAggregationInput = {
     location?: Prisma.SortOrder;
     pricePerDay?: Prisma.SortOrder;
     description?: Prisma.SortOrder;
+    images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
@@ -210,6 +217,7 @@ export type ListingScalarWhereWithAggregatesInput = {
     location?: Prisma.StringWithAggregatesFilter<"Listing"> | string;
     pricePerDay?: Prisma.DecimalWithAggregatesFilter<"Listing"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringWithAggregatesFilter<"Listing"> | string;
+    images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusWithAggregatesFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"Listing"> | Date | string;
     ownerId?: Prisma.StringWithAggregatesFilter<"Listing"> | string;
@@ -221,6 +229,7 @@ export type ListingCreateInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
@@ -234,6 +243,7 @@ export type ListingUncheckedCreateInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     ownerId: string;
@@ -247,6 +257,7 @@ export type ListingUpdateInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
@@ -260,6 +271,7 @@ export type ListingUncheckedUpdateInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -273,6 +285,7 @@ export type ListingCreateManyInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     ownerId: string;
@@ -284,6 +297,7 @@ export type ListingUpdateManyMutationInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -294,6 +308,7 @@ export type ListingUncheckedUpdateManyInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -306,6 +321,13 @@ export type ListingListRelationFilter = {
 export type ListingOrderByRelationAggregateInput = {
     _count?: Prisma.SortOrder;
 };
+export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null;
+    has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null;
+    hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>;
+    hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>;
+    isEmpty?: boolean;
+};
 export type ListingCountOrderByAggregateInput = {
     id?: Prisma.SortOrder;
     title?: Prisma.SortOrder;
@@ -313,6 +335,7 @@ export type ListingCountOrderByAggregateInput = {
     location?: Prisma.SortOrder;
     pricePerDay?: Prisma.SortOrder;
     description?: Prisma.SortOrder;
+    images?: Prisma.SortOrder;
     status?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
@@ -387,6 +410,9 @@ export type ListingUncheckedUpdateManyWithoutOwnerNestedInput = {
     updateMany?: Prisma.ListingUpdateManyWithWhereWithoutOwnerInput | Prisma.ListingUpdateManyWithWhereWithoutOwnerInput[];
     deleteMany?: Prisma.ListingScalarWhereInput | Prisma.ListingScalarWhereInput[];
 };
+export type ListingCreateimagesInput = {
+    set: string[];
+};
 export type EnumListingCategoryFieldUpdateOperationsInput = {
     set?: $Enums.ListingCategory;
 };
@@ -396,6 +422,10 @@ export type DecimalFieldUpdateOperationsInput = {
     decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string;
     multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string;
     divide?: runtime.Decimal | runtime.DecimalJsLike | number | string;
+};
+export type ListingUpdateimagesInput = {
+    set?: string[];
+    push?: string | string[];
 };
 export type EnumListingStatusFieldUpdateOperationsInput = {
     set?: $Enums.ListingStatus;
@@ -431,6 +461,7 @@ export type ListingCreateWithoutOwnerInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     bookings?: Prisma.BookingCreateNestedManyWithoutListingInput;
@@ -443,6 +474,7 @@ export type ListingUncheckedCreateWithoutOwnerInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutListingInput;
@@ -479,6 +511,7 @@ export type ListingScalarWhereInput = {
     location?: Prisma.StringFilter<"Listing"> | string;
     pricePerDay?: Prisma.DecimalFilter<"Listing"> | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFilter<"Listing"> | string;
+    images?: Prisma.StringNullableListFilter<"Listing">;
     status?: Prisma.EnumListingStatusFilter<"Listing"> | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFilter<"Listing"> | Date | string;
     ownerId?: Prisma.StringFilter<"Listing"> | string;
@@ -490,6 +523,7 @@ export type ListingCreateWithoutBookingsInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
@@ -502,6 +536,7 @@ export type ListingUncheckedCreateWithoutBookingsInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     ownerId: string;
@@ -527,6 +562,7 @@ export type ListingUpdateWithoutBookingsInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
@@ -539,6 +575,7 @@ export type ListingUncheckedUpdateWithoutBookingsInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -551,6 +588,7 @@ export type ListingCreateWithoutThreadsInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     owner: Prisma.UserCreateNestedOneWithoutListingsInput;
@@ -563,6 +601,7 @@ export type ListingUncheckedCreateWithoutThreadsInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
     ownerId: string;
@@ -588,6 +627,7 @@ export type ListingUpdateWithoutThreadsInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     owner?: Prisma.UserUpdateOneRequiredWithoutListingsNestedInput;
@@ -600,6 +640,7 @@ export type ListingUncheckedUpdateWithoutThreadsInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -612,6 +653,7 @@ export type ListingCreateManyOwnerInput = {
     location: string;
     pricePerDay: runtime.Decimal | runtime.DecimalJsLike | number | string;
     description: string;
+    images?: Prisma.ListingCreateimagesInput | string[];
     status?: $Enums.ListingStatus;
     createdAt?: Date | string;
 };
@@ -622,6 +664,7 @@ export type ListingUpdateWithoutOwnerInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     bookings?: Prisma.BookingUpdateManyWithoutListingNestedInput;
@@ -634,6 +677,7 @@ export type ListingUncheckedUpdateWithoutOwnerInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     bookings?: Prisma.BookingUncheckedUpdateManyWithoutListingNestedInput;
@@ -646,6 +690,7 @@ export type ListingUncheckedUpdateManyWithoutOwnerInput = {
     location?: Prisma.StringFieldUpdateOperationsInput | string;
     pricePerDay?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string;
     description?: Prisma.StringFieldUpdateOperationsInput | string;
+    images?: Prisma.ListingUpdateimagesInput | string[];
     status?: Prisma.EnumListingStatusFieldUpdateOperationsInput | $Enums.ListingStatus;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -673,6 +718,7 @@ export type ListingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     location?: boolean;
     pricePerDay?: boolean;
     description?: boolean;
+    images?: boolean;
     status?: boolean;
     createdAt?: boolean;
     ownerId?: boolean;
@@ -688,6 +734,7 @@ export type ListingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
     location?: boolean;
     pricePerDay?: boolean;
     description?: boolean;
+    images?: boolean;
     status?: boolean;
     createdAt?: boolean;
     ownerId?: boolean;
@@ -700,6 +747,7 @@ export type ListingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
     location?: boolean;
     pricePerDay?: boolean;
     description?: boolean;
+    images?: boolean;
     status?: boolean;
     createdAt?: boolean;
     ownerId?: boolean;
@@ -712,11 +760,12 @@ export type ListingSelectScalar = {
     location?: boolean;
     pricePerDay?: boolean;
     description?: boolean;
+    images?: boolean;
     status?: boolean;
     createdAt?: boolean;
     ownerId?: boolean;
 };
-export type ListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "category" | "location" | "pricePerDay" | "description" | "status" | "createdAt" | "ownerId", ExtArgs["result"]["listing"]>;
+export type ListingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "category" | "location" | "pricePerDay" | "description" | "images" | "status" | "createdAt" | "ownerId", ExtArgs["result"]["listing"]>;
 export type ListingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     bookings?: boolean | Prisma.Listing$bookingsArgs<ExtArgs>;
@@ -743,6 +792,7 @@ export type $ListingPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
         location: string;
         pricePerDay: runtime.Decimal;
         description: string;
+        images: string[];
         status: $Enums.ListingStatus;
         createdAt: Date;
         ownerId: string;
@@ -812,6 +862,7 @@ export interface ListingFieldRefs {
     readonly location: Prisma.FieldRef<"Listing", 'String'>;
     readonly pricePerDay: Prisma.FieldRef<"Listing", 'Decimal'>;
     readonly description: Prisma.FieldRef<"Listing", 'String'>;
+    readonly images: Prisma.FieldRef<"Listing", 'String[]'>;
     readonly status: Prisma.FieldRef<"Listing", 'ListingStatus'>;
     readonly createdAt: Prisma.FieldRef<"Listing", 'DateTime'>;
     readonly ownerId: Prisma.FieldRef<"Listing", 'String'>;

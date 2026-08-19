@@ -18,6 +18,7 @@ class CreateListingDto {
     location;
     pricePerDay;
     description;
+    images;
 }
 exports.CreateListingDto = CreateListingDto;
 __decorate([
@@ -45,4 +46,11 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateListingDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(8),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], CreateListingDto.prototype, "images", void 0);
 //# sourceMappingURL=create-listing.dto.js.map
