@@ -53,6 +53,11 @@ enum CardBrand {
   Mastercard
 }
 
+enum ReviewDirection {
+  renter_to_owner
+  owner_to_renter
+}
+
 // ── Core entities ─────────────────────────────────────
 
 model User {
@@ -75,6 +80,8 @@ model User {
   paymentMethods PaymentMethod[]
   messages       Message[]
   messageThreadsAsRenter MessageThread[] @relation("RenterThreads")
+  reviewsAuthored Review[] @relation("ReviewsAuthored")
+  reviewsReceived Review[] @relation("ReviewsReceived")
 
   @@map("users")
 }
@@ -139,6 +146,7 @@ model Booking {
   paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
 
   dispute Dispute?
+  reviews Review[]
 
   // TODO before going live: Postgres can't enforce "no overlapping date
   // ranges per listing" through Prisma alone — that needs a raw SQL
@@ -216,6 +224,31 @@ model Dispute {
   // booking.listing.owner instead of being duplicated as text.
 
   @@map("disputes")
+}
+
+model Review {
+  id        String          @id @default(uuid())
+  // 1-5, validated at the DTO layer (@IsInt/@Min(1)/@Max(5)) — deliberately
+  // no DB check constraint, matching the design doc.
+  rating    Int
+  comment   String?         @db.Text
+  // Stored rather than inferred from authorId vs booking.renterId so that
+  // "one review per side per booking" is a DB unique constraint, and so
+  // "reviews about this listing/owner" is a plain filter, not a per-row compare.
+  direction ReviewDirection
+  createdAt DateTime        @default(now())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  authorId String
+  author   User   @relation("ReviewsAuthored", fields: [authorId], references: [id])
+
+  revieweeId String
+  reviewee   User   @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+
+  @@unique([bookingId, direction])
+  @@map("reviews")
 }
 
 // ── Staff / admin (separate auth domain) ──────────────
