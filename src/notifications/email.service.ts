@@ -26,7 +26,7 @@ export class EmailService {
 
     const transport = createTransport({
       host,
-      port: Number(this.config.get<string>('EMAIL_PORT') ?? 587),
+      port: Number(this.config.get<string>('EMAIL_PORT') || 587),
       ...(user && pass ? { auth: { user, pass } } : {}),
     });
 

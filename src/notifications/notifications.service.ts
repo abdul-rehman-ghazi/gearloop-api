@@ -24,12 +24,24 @@ export class NotificationsService {
     body: string,
     link?: string,
   ) {
-    const notification = await this.prisma.notification.create({
-      data: { userId, type, title, body, link },
-    });
+    // The row write is the durable channel and must be guarded the same as
+    // the email send below: a failure here must never propagate to the
+    // caller, whose own DB write has already committed by the time this
+    // runs (bookings/messages/disputes call notify() after their write).
+    let notification;
+    try {
+      notification = await this.prisma.notification.create({
+        data: { userId, type, title, body, link },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to notify user ${userId} (${type}): ${(err as Error).message}`,
+      );
+      return;
+    }
 
-    // Email is best-effort: the in-app row is the durable channel, so a
-    // failed send must never roll it back or fail the caller's request.
+    // Email is best-effort: the in-app row is already durable, so a failed
+    // send must never roll it back or fail the caller's request.
     try {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (user) await this.email.send(user.email, title, body);

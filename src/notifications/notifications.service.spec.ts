@@ -107,6 +107,20 @@ describe('NotificationsService.notify', () => {
     ).resolves.toEqual({ id: 'n4' });
     expect(email.send).not.toHaveBeenCalled();
   });
+
+  it('does not throw when notification.create itself fails', async () => {
+    const prisma = makePrisma();
+    const email = makeEmail();
+    (prisma.notification.create as jest.Mock).mockRejectedValue(
+      new Error('DB down'),
+    );
+
+    const service = new NotificationsService(prisma, email);
+    await expect(
+      service.notify('u1', 'message_received', 'Title', 'Body'),
+    ).resolves.toBeUndefined();
+    expect(email.send).not.toHaveBeenCalled();
+  });
 });
 
 describe('NotificationsService.findForUser', () => {

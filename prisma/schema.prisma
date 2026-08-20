@@ -273,6 +273,7 @@ model Notification {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
