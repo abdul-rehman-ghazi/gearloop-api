@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -189,7 +190,7 @@ describe('BookingsService.create payments', () => {
     // 2 nights at 100 => subtotal 200, fee 20, tax 17.60, total 237.60
     expect(payments.authorize).toHaveBeenCalledTimes(1);
     const [processorId, amount] = (payments.authorize as jest.Mock).mock
-      .calls[0];
+      .calls[0] as [string, Prisma.Decimal];
     expect(processorId).toBe('pm_card_visa');
     expect(amount.toString()).toBe('237.6');
 
