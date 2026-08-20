@@ -114,6 +114,13 @@ export class BookingsService {
       // (exclusion_violation) for the loser of that race — Prisma has no
       // dedicated typed error code for it, so we check defensively across
       // the shapes different Prisma versions surface it in.
+
+      // The booking row never got written — release the hold we just placed
+      // so the renter's card isn't held against a booking that doesn't exist.
+      // Best-effort: if the release itself fails, we still need to report the
+      // original error to the caller, not this cleanup failure.
+      await this.payments.release(paymentIntentId).catch(() => {});
+
       if (this.isExclusionViolation(err)) {
         throw new ConflictException(
           'Listing is not available for the selected dates',

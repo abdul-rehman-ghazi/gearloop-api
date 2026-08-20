@@ -64,6 +64,19 @@ export class PaymentsService {
 
     if (intent.status === 'succeeded') {
       await this.stripe.refunds.create({ payment_intent: paymentIntentId });
+      return;
     }
+
+    // Already cancelled: genuinely nothing to do, this is a real success case.
+    if (intent.status === 'canceled') {
+      return;
+    }
+
+    // Any other status (e.g. `processing`) means we don't actually know how
+    // to release this hold safely — reporting success here would silently
+    // leave money uncaptured/unrefunded while the caller thinks it worked.
+    throw new Error(
+      `Cannot release PaymentIntent in status "${intent.status}"`,
+    );
   }
 }

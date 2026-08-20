@@ -193,6 +193,21 @@ describe('PaymentsService.release', () => {
     expect(mockStripeClient.refunds.create).not.toHaveBeenCalled();
   });
 
+  it('throws for an intent in an unexpected status instead of silently no-opping', async () => {
+    mockStripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: 'pi_test_1',
+      status: 'processing',
+    });
+
+    const service = makeService();
+    await expect(service.release('pi_test_1')).rejects.toThrow(
+      'Cannot release PaymentIntent in status "processing"',
+    );
+
+    expect(mockStripeClient.paymentIntents.cancel).not.toHaveBeenCalled();
+    expect(mockStripeClient.refunds.create).not.toHaveBeenCalled();
+  });
+
   it('propagates a release failure un-caught', async () => {
     mockStripeClient.paymentIntents.retrieve.mockResolvedValue({
       id: 'pi_test_1',

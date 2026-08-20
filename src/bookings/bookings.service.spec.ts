@@ -271,6 +271,27 @@ describe('BookingsService.create payments', () => {
     );
     expect(prisma.booking.create).not.toHaveBeenCalled();
   });
+
+  it('releases the hold when the booking row fails to write', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
+      paymentMethod,
+    );
+    (payments.authorize as jest.Mock).mockResolvedValue('pi_orphaned');
+    (prisma.booking.create as jest.Mock).mockRejectedValue(
+      new Error('database is down'),
+    );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      'database is down',
+    );
+
+    expect(payments.release).toHaveBeenCalledWith('pi_orphaned');
+  });
 });
 
 describe('BookingsService.updateStatus payments', () => {
