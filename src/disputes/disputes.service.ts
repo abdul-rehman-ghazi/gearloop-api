@@ -7,10 +7,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UpdateDisputeStatusDto } from './dto/update-dispute-status.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class DisputesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(userId: string, dto: CreateDisputeDto) {
     const booking = await this.prisma.booking.findUnique({
@@ -38,6 +42,18 @@ export class DisputesService {
         data: { payoutStatus: 'on_hold' },
       }),
     ]);
+
+    // The other party to the booking — never the filer.
+    const recipientId =
+      userId === booking.renterId ? booking.listing.ownerId : booking.renterId;
+    await this.notifications.notify(
+      recipientId,
+      'dispute_filed',
+      `A dispute was filed for booking ${booking.requestNumber}`,
+      dto.detail,
+      `/disputes/${dispute.id}`,
+    );
+
     return dispute;
   }
 
@@ -82,13 +98,20 @@ export class DisputesService {
           data: { payoutStatus: 'pending' },
         }),
       ]);
+      await this.notifyResolved(dispute);
       return updated;
     }
 
-    return this.prisma.dispute.update({
+    const updated = await this.prisma.dispute.update({
       where: { id },
       data: { status: dto.status },
     });
+
+    if (dto.status === 'resolved') {
+      await this.notifyResolved(dispute);
+    }
+
+    return updated;
   }
 
   async findAllForAdmin() {
@@ -114,6 +137,35 @@ export class DisputesService {
     });
     if (!dispute) throw new NotFoundException('Dispute not found');
     return this.sanitizeForAdmin(dispute);
+  }
+
+  // Both parties get told, since either could have filed it.
+  private async notifyResolved(dispute: {
+    id: string;
+    booking: {
+      requestNumber: string;
+      renterId: string;
+      listing: { ownerId: string };
+    };
+  }) {
+    const title = `The dispute for booking ${dispute.booking.requestNumber} was resolved`;
+    const body = `The dispute for booking ${dispute.booking.requestNumber} has been marked resolved.`;
+    const link = `/disputes/${dispute.id}`;
+
+    await this.notifications.notify(
+      dispute.booking.renterId,
+      'dispute_resolved',
+      title,
+      body,
+      link,
+    );
+    await this.notifications.notify(
+      dispute.booking.listing.ownerId,
+      'dispute_resolved',
+      title,
+      body,
+      link,
+    );
   }
 
   private sanitizeForAdmin<
