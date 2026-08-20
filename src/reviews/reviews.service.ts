@@ -54,4 +54,63 @@ export class ReviewsService {
       },
     });
   }
+
+  async findForBooking(bookingId: string, userId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { listing: true },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.renterId !== userId && booking.listing.ownerId !== userId) {
+      throw new ForbiddenException('You are not a party to this booking');
+    }
+
+    return this.prisma.review.findMany({
+      where: { bookingId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findForListing(listingId: string) {
+    // Reviews about the gear/owner are exactly the renter_to_owner rows on
+    // bookings for this listing.
+    const where = {
+      direction: 'renter_to_owner' as ReviewDirection,
+      booking: { listingId },
+    };
+    const [reviews, aggregate] = await Promise.all([
+      this.prisma.review.findMany({ where, orderBy: { createdAt: 'desc' } }),
+      // Averaged live rather than denormalized onto Listing — no write-path
+      // recalculation, no drift.
+      this.prisma.review.aggregate({
+        where,
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+    ]);
+
+    return {
+      average: aggregate._avg.rating,
+      count: aggregate._count.rating,
+      reviews,
+    };
+  }
+
+  async findForUser(revieweeId: string) {
+    const where = { revieweeId };
+    const [reviews, aggregate] = await Promise.all([
+      this.prisma.review.findMany({ where, orderBy: { createdAt: 'desc' } }),
+      this.prisma.review.aggregate({
+        where,
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+    ]);
+
+    return {
+      average: aggregate._avg.rating,
+      count: aggregate._count.rating,
+      reviews,
+    };
+  }
 }
