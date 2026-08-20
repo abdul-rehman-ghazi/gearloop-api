@@ -218,6 +218,8 @@ describe('PaymentsService.release', () => {
     );
 
     const service = makeService();
-    await expect(service.release('pi_test_1')).rejects.toThrow('Stripe is down');
+    await expect(service.release('pi_test_1')).rejects.toThrow(
+      'Stripe is down',
+    );
   });
 });
