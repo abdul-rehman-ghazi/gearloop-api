@@ -8,12 +8,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const RENTER_SELECT = { id: true, name: true, initials: true } as const;
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(renterId: string, dto: CreateBookingDto) {
     const listing = await this.prisma.listing.findUnique({
@@ -49,7 +53,7 @@ export class BookingsService {
     );
 
     try {
-      return await this.prisma.booking.create({
+      const booking = await this.prisma.booking.create({
         data: {
           listingId: dto.listingId,
           renterId,
@@ -66,6 +70,16 @@ export class BookingsService {
         },
         include: { renter: { select: RENTER_SELECT } },
       });
+
+      await this.notifications.notify(
+        listing.ownerId,
+        'booking_requested',
+        `New booking request for ${listing.title}`,
+        `Request ${booking.requestNumber} is awaiting your response.`,
+        `/bookings/${booking.id}`,
+      );
+
+      return booking;
     } catch (err) {
       // The pre-check above eliminates the vast majority of overlaps, but
       // it can't close the race between two concurrent requests that both
@@ -86,7 +100,7 @@ export class BookingsService {
   async findById(id: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: { renter: { select: RENTER_SELECT } },
+      include: { listing: true, renter: { select: RENTER_SELECT } },
     });
     if (!booking) throw new NotFoundException('Booking not found');
     return booking;
@@ -109,7 +123,7 @@ export class BookingsService {
   }
 
   async updateStatus(id: string, dto: UpdateBookingStatusDto) {
-    await this.findById(id);
+    const existing = await this.findById(id);
 
     if (dto.status === 'confirmed') {
       const booking = await this.prisma.booking.findUniqueOrThrow({
@@ -133,10 +147,26 @@ export class BookingsService {
           : undefined;
 
     try {
-      return await this.prisma.booking.update({
+      const updated = await this.prisma.booking.update({
         where: { id },
         data: { status: dto.status, ...(payoutStatus !== undefined && { payoutStatus }) },
       });
+
+      if (dto.status === 'confirmed' || dto.status === 'cancelled') {
+        await this.notifications.notify(
+          existing.renterId,
+          dto.status === 'confirmed' ? 'booking_confirmed' : 'booking_cancelled',
+          dto.status === 'confirmed'
+            ? `Your booking for ${existing.listing.title} is confirmed`
+            : `Your booking for ${existing.listing.title} was cancelled`,
+          dto.status === 'confirmed'
+            ? `Booking ${existing.requestNumber} is confirmed.`
+            : `Booking ${existing.requestNumber} was cancelled.`,
+          `/bookings/${id}`,
+        );
+      }
+
+      return updated;
     } catch (err) {
       if (this.isExclusionViolation(err)) {
         throw new ConflictException(
