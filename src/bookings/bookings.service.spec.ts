@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -101,7 +105,7 @@ describe('BookingsService.updateStatus notifications', () => {
     });
 
     const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', { status: 'confirmed' });
+    await service.updateStatus('b1', 'renter-1', { status: 'confirmed' });
 
     expect(notifications.notify).toHaveBeenCalledWith(
       'renter-1',
@@ -122,7 +126,7 @@ describe('BookingsService.updateStatus notifications', () => {
     });
 
     const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', { status: 'cancelled' });
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
 
     expect(notifications.notify).toHaveBeenCalledWith(
       'renter-1',
@@ -143,7 +147,7 @@ describe('BookingsService.updateStatus notifications', () => {
     });
 
     const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', { status: 'completed' });
+    await service.updateStatus('b1', 'renter-1', { status: 'completed' });
 
     expect(notifications.notify).not.toHaveBeenCalled();
   });
@@ -325,7 +329,7 @@ describe('BookingsService.updateStatus payments', () => {
     const { prisma, notifications, payments } = arrange();
 
     const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', { status: 'confirmed' });
+    await service.updateStatus('b1', 'renter-1', { status: 'confirmed' });
 
     expect(payments.capture).toHaveBeenCalledWith('pi_test_1');
     expect(payments.release).not.toHaveBeenCalled();
@@ -344,7 +348,7 @@ describe('BookingsService.updateStatus payments', () => {
 
     const service = new BookingsService(prisma, notifications, payments);
     await expect(
-      service.updateStatus('b1', { status: 'confirmed' }),
+      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
     ).rejects.toThrow(ConflictException);
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
@@ -359,7 +363,7 @@ describe('BookingsService.updateStatus payments', () => {
 
     const service = new BookingsService(prisma, notifications, payments);
     await expect(
-      service.updateStatus('b1', { status: 'confirmed' }),
+      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
     ).rejects.toThrow('Payment could not be captured');
   });
 
@@ -371,7 +375,7 @@ describe('BookingsService.updateStatus payments', () => {
     });
 
     const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', { status: 'cancelled' });
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
 
     expect(payments.release).toHaveBeenCalledWith('pi_test_1');
     expect(payments.capture).not.toHaveBeenCalled();
@@ -390,7 +394,7 @@ describe('BookingsService.updateStatus payments', () => {
 
     const service = new BookingsService(prisma, notifications, payments);
     await expect(
-      service.updateStatus('b1', { status: 'cancelled' }),
+      service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
     ).rejects.toThrow('Payment could not be released');
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
@@ -406,7 +410,7 @@ describe('BookingsService.updateStatus payments', () => {
 
     const service = new BookingsService(prisma, notifications, payments);
     await expect(
-      service.updateStatus('b1', { status: 'confirmed' }),
+      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
     ).rejects.toThrow('Payment could not be captured');
 
     expect(payments.capture).not.toHaveBeenCalled();
@@ -421,10 +425,56 @@ describe('BookingsService.updateStatus payments', () => {
     });
 
     const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', { status: 'completed' });
+    await service.updateStatus('b1', 'renter-1', { status: 'completed' });
 
     expect(payments.capture).not.toHaveBeenCalled();
     expect(payments.release).not.toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalled();
+  });
+});
+
+describe('BookingsService.updateStatus authorization', () => {
+  const booking = {
+    id: 'b1',
+    requestNumber: 'GL-1',
+    listingId: 'l1',
+    renterId: 'renter-1',
+    paymentIntentId: 'pi_test_1',
+    startDate: new Date('2026-09-01'),
+    endDate: new Date('2026-09-03'),
+    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
+  };
+
+  it('forbids a caller who is neither the renter nor the listing owner', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', 'stranger-1', { status: 'cancelled' }),
+    ).rejects.toThrow(ForbiddenException);
+
+    expect(payments.release).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('allows the listing owner to update status, not just the renter', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(booking);
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'confirmed',
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'confirmed' }),
+    ).resolves.toEqual({ id: 'b1', status: 'confirmed' });
   });
 });

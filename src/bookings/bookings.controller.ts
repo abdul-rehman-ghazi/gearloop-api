@@ -40,7 +40,11 @@ export class BookingsController {
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateBookingStatusDto) {
-    return this.bookingsService.updateStatus(id, dto);
+  updateStatus(
+    @CurrentUser() user: UserAuthContext,
+    @Param('id') id: string,
+    @Body() dto: UpdateBookingStatusDto,
+  ) {
+    return this.bookingsService.updateStatus(id, user.userId, dto);
   }
 }

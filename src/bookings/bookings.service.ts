@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -155,8 +156,11 @@ export class BookingsService {
     });
   }
 
-  async updateStatus(id: string, dto: UpdateBookingStatusDto) {
+  async updateStatus(id: string, userId: string, dto: UpdateBookingStatusDto) {
     const existing = await this.findById(id);
+    if (existing.renterId !== userId && existing.listing.ownerId !== userId) {
+      throw new ForbiddenException('You are not a party to this booking');
+    }
 
     if (dto.status === 'confirmed') {
       const booking = await this.prisma.booking.findUniqueOrThrow({
