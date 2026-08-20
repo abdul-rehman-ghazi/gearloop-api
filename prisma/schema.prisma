@@ -136,6 +136,11 @@ model Booking {
   createdAt     DateTime      @default(now())
   deletedAt     DateTime?
 
+  // Stripe PaymentIntent id; set once the auth-hold succeeds. Nullable
+  // because a booking row only ever exists after a successful authorize,
+  // but rows written before this feature shipped have no intent.
+  paymentIntentId String?
+
   // Pricing snapshot at time of booking — stored, not recomputed, since
   // Listing.pricePerDay can change later and a past booking's receipt
   // shouldn't retroactively change with it.
