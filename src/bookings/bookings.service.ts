@@ -9,6 +9,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
 
 const RENTER_SELECT = { id: true, name: true, initials: true } as const;
 
@@ -17,6 +18,7 @@ export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async create(renterId: string, dto: CreateBookingDto) {
@@ -52,6 +54,29 @@ export class BookingsService {
       nights,
     );
 
+    // Ruling 5: no booking row exists without a successful auth-hold, the
+    // same way no booking row exists when the availability check fails.
+    let paymentIntentId: string;
+    try {
+      paymentIntentId = await this.payments.authorize(
+        paymentMethod.processorPaymentMethodId,
+        total,
+      );
+    } catch (err) {
+      // Stripe tags every error it raises with a `type` string;
+      // StripeCardError is the decline/insufficient-funds/SCA-refused family.
+      // Checking the string rather than `instanceof Stripe.errors.*` keeps
+      // this file free of a `stripe` import and works under jest.mock.
+      // Stripe's own message is deliberately not surfaced verbatim, to avoid
+      // leaking processor detail to the client.
+      if ((err as { type?: string })?.type === 'StripeCardError') {
+        throw new BadRequestException('Card was declined');
+      }
+      // Anything else (network, bad API key, Stripe outage) is not the
+      // renter's fault and is not translated — it surfaces as a 500.
+      throw err;
+    }
+
     try {
       const booking = await this.prisma.booking.create({
         data: {
@@ -67,6 +92,7 @@ export class BookingsService {
           serviceFee,
           tax,
           total,
+          paymentIntentId,
         },
         include: { renter: { select: RENTER_SELECT } },
       });
