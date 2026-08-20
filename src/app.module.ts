@@ -11,6 +11,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { MessagesModule } from './messages/messages.module';
 import { DisputesModule } from './disputes/disputes.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { AdminModule } from './admin/admin.module';
 import { PricingModule } from './pricing/pricing.module';
 
@@ -26,6 +27,7 @@ import { PricingModule } from './pricing/pricing.module';
     PaymentMethodsModule,
     MessagesModule,
     DisputesModule,
+    ReviewsModule,
     AdminModule,
     PricingModule,
   ],
