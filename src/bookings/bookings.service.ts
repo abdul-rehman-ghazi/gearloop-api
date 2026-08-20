@@ -9,6 +9,8 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
 
+const RENTER_SELECT = { id: true, name: true, initials: true } as const;
+
 @Injectable()
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -62,6 +64,7 @@ export class BookingsService {
           tax,
           total,
         },
+        include: { renter: { select: RENTER_SELECT } },
       });
     } catch (err) {
       // The pre-check above eliminates the vast majority of overlaps, but
@@ -81,7 +84,10 @@ export class BookingsService {
   }
 
   async findById(id: string) {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { renter: { select: RENTER_SELECT } },
+    });
     if (!booking) throw new NotFoundException('Booking not found');
     return booking;
   }
@@ -89,6 +95,7 @@ export class BookingsService {
   findByUser(renterId: string) {
     return this.prisma.booking.findMany({
       where: { renterId },
+      include: { renter: { select: RENTER_SELECT } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -96,7 +103,7 @@ export class BookingsService {
   findByOwner(ownerId: string) {
     return this.prisma.booking.findMany({
       where: { listing: { ownerId } },
-      include: { listing: true },
+      include: { listing: true, renter: { select: RENTER_SELECT } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -116,10 +123,19 @@ export class BookingsService {
       );
     }
 
+    // `paid` is never written here — nothing captures money or runs payouts
+    // yet. See feature idea #3 (Actually charge the card).
+    const payoutStatus =
+      dto.status === 'confirmed'
+        ? 'pending'
+        : dto.status === 'cancelled'
+          ? null
+          : undefined;
+
     try {
       return await this.prisma.booking.update({
         where: { id },
-        data: { status: dto.status },
+        data: { status: dto.status, ...(payoutStatus !== undefined && { payoutStatus }) },
       });
     } catch (err) {
       if (this.isExclusionViolation(err)) {

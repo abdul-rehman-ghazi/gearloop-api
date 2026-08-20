@@ -15,6 +15,7 @@ import { JwtAdminAuthGuard } from '../auth/guards/jwt-admin-auth.guard';
 import { ListingStatus } from '../../generated/prisma/enums';
 import { AdminUpdateUserDto } from './dto/update-user.dto';
 import { UpdateListingDto } from '../listings/dto/update-listing.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @UseGuards(JwtAdminAuthGuard)
 @Controller('admin')
@@ -22,8 +23,18 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('users')
-  findAllUsers() {
-    return this.adminService.findAllUsers();
+  findAllUsers(@Query() dto: PaginationDto) {
+    return this.adminService.findAllUsers(dto);
+  }
+
+  @Get('users/:id')
+  findUserById(@Param('id') id: string) {
+    return this.adminService.findUserById(id);
+  }
+
+  @Get('revenue')
+  getRevenue() {
+    return this.adminService.getRevenue();
   }
 
   @Patch('users/:id/suspend')
@@ -48,8 +59,8 @@ export class AdminController {
   }
 
   @Get('bookings')
-  findAllBookings() {
-    return this.adminService.findAllBookings();
+  findAllBookings(@Query() dto: PaginationDto) {
+    return this.adminService.findAllBookings(dto);
   }
 
   @Get('listings')

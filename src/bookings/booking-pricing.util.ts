@@ -7,8 +7,8 @@ export interface BookingPricing {
   total: Prisma.Decimal;
 }
 
-const SERVICE_FEE_RATE = '0.10';
-const TAX_RATE = '0.08';
+export const SERVICE_FEE_RATE = '0.10';
+export const TAX_RATE = '0.08';
 
 export function calculateBookingPricing(
   pricePerDay: Prisma.Decimal | number | string,

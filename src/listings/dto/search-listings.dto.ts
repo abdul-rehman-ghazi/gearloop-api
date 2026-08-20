@@ -1,7 +1,14 @@
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { ListingCategory } from '../../../generated/prisma/enums';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class SearchListingsDto {
+export class SearchListingsDto extends PaginationDto {
   @IsOptional()
   @IsEnum(ListingCategory)
   category?: ListingCategory;
@@ -17,4 +24,8 @@ export class SearchListingsDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsUUID()
+  ownerId?: string;
 }

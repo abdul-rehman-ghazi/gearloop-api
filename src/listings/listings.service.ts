@@ -39,6 +39,7 @@ export class ListingsService {
       ...(dto.location && {
         location: { contains: dto.location, mode: 'insensitive' },
       }),
+      ...(dto.ownerId && { ownerId: dto.ownerId }),
     };
 
     if (dto.startDate && dto.endDate) {
@@ -53,10 +54,20 @@ export class ListingsService {
       };
     }
 
-    return this.prisma.listing.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
+    const page = dto.page ?? 1;
+    const pageSize = dto.pageSize ?? 24;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.listing.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   async findById(id: string) {

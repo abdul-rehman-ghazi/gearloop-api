@@ -29,9 +29,16 @@ export class DisputesService {
       throw new ConflictException('A dispute already exists for this booking');
     }
 
-    return this.prisma.dispute.create({
-      data: { bookingId: dto.bookingId, detail: dto.detail },
-    });
+    const [dispute] = await this.prisma.$transaction([
+      this.prisma.dispute.create({
+        data: { bookingId: dto.bookingId, detail: dto.detail },
+      }),
+      this.prisma.booking.update({
+        where: { id: dto.bookingId },
+        data: { payoutStatus: 'on_hold' },
+      }),
+    ]);
+    return dispute;
   }
 
   async findAllForUser(userId: string) {
@@ -62,7 +69,22 @@ export class DisputesService {
   }
 
   async updateStatus(id: string, dto: UpdateDisputeStatusDto) {
-    await this.findById(id);
+    const dispute = await this.findById(id);
+
+    if (dto.status === 'resolved' && dispute.booking.status !== 'cancelled') {
+      const [updated] = await this.prisma.$transaction([
+        this.prisma.dispute.update({
+          where: { id },
+          data: { status: dto.status },
+        }),
+        this.prisma.booking.update({
+          where: { id: dispute.bookingId },
+          data: { payoutStatus: 'pending' },
+        }),
+      ]);
+      return updated;
+    }
+
     return this.prisma.dispute.update({
       where: { id },
       data: { status: dto.status },
