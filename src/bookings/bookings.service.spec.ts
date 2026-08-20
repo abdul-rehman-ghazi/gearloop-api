@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -269,5 +269,140 @@ describe('BookingsService.create payments', () => {
       'Invalid API Key provided',
     );
     expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('BookingsService.updateStatus payments', () => {
+  const heldBooking = {
+    id: 'b1',
+    requestNumber: 'GL-1',
+    listingId: 'l1',
+    renterId: 'renter-1',
+    paymentIntentId: 'pi_test_1',
+    startDate: new Date('2026-09-01'),
+    endDate: new Date('2026-09-03'),
+    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
+  };
+
+  function arrange() {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(heldBooking);
+    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+      heldBooking,
+    );
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'confirmed',
+    });
+    return { prisma, notifications, payments };
+  }
+
+  it('captures the hold when confirming, before updating the row', async () => {
+    const { prisma, notifications, payments } = arrange();
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', { status: 'confirmed' });
+
+    expect(payments.capture).toHaveBeenCalledWith('pi_test_1');
+    expect(payments.release).not.toHaveBeenCalled();
+    expect(
+      (payments.capture as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      (prisma.booking.update as jest.Mock).mock.invocationCallOrder[0],
+    );
+  });
+
+  it('blocks the confirm transition when the capture fails', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (payments.capture as jest.Mock).mockRejectedValue(
+      new Error('intent expired'),
+    );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', { status: 'confirmed' }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('reports a capture failure as "Payment could not be captured"', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (payments.capture as jest.Mock).mockRejectedValue(
+      new Error('intent expired'),
+    );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', { status: 'confirmed' }),
+    ).rejects.toThrow('Payment could not be captured');
+  });
+
+  it('releases the hold when cancelling, before updating the row', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'cancelled',
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', { status: 'cancelled' });
+
+    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
+    expect(payments.capture).not.toHaveBeenCalled();
+    expect(
+      (payments.release as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      (prisma.booking.update as jest.Mock).mock.invocationCallOrder[0],
+    );
+  });
+
+  it('blocks the cancel transition when the release fails', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (payments.release as jest.Mock).mockRejectedValue(
+      new Error('refund failed'),
+    );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', { status: 'cancelled' }),
+    ).rejects.toThrow('Payment could not be released');
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('blocks the transition when the booking has no payment intent', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
+      ...heldBooking,
+      paymentIntentId: null,
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', { status: 'confirmed' }),
+    ).rejects.toThrow('Payment could not be captured');
+
+    expect(payments.capture).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('touches no payment call when completing a booking', async () => {
+    const { prisma, notifications, payments } = arrange();
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'completed',
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', { status: 'completed' });
+
+    expect(payments.capture).not.toHaveBeenCalled();
+    expect(payments.release).not.toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalled();
   });
 });

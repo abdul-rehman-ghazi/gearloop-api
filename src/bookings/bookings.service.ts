@@ -161,10 +161,39 @@ export class BookingsService {
         booking.endDate,
         id,
       );
+
+      // Ruling 5: the capture must succeed before the row moves to
+      // confirmed. A throw here means no status update and no notification.
+      try {
+        if (!existing.paymentIntentId) {
+          throw new Error('booking has no payment intent to capture');
+        }
+        await this.payments.capture(existing.paymentIntentId);
+      } catch (err) {
+        throw new ConflictException('Payment could not be captured', {
+          cause: err,
+        });
+      }
     }
 
-    // `paid` is never written here — nothing captures money or runs payouts
-    // yet. See feature idea #3 (Actually charge the card).
+    if (dto.status === 'cancelled') {
+      // release() figures out cancel-vs-refund from the intent's own status.
+      try {
+        if (!existing.paymentIntentId) {
+          throw new Error('booking has no payment intent to release');
+        }
+        await this.payments.release(existing.paymentIntentId);
+      } catch (err) {
+        throw new ConflictException('Payment could not be released', {
+          cause: err,
+        });
+      }
+    }
+
+    // `paid` is never written here: the capture above moves funds into the
+    // platform's Stripe balance, so `pending` truthfully means "captured,
+    // awaiting a payout job". The payout job itself is out of scope
+    // (Ruling 2) and is what will eventually write `paid`.
     const payoutStatus =
       dto.status === 'confirmed'
         ? 'pending'
@@ -175,13 +204,18 @@ export class BookingsService {
     try {
       const updated = await this.prisma.booking.update({
         where: { id },
-        data: { status: dto.status, ...(payoutStatus !== undefined && { payoutStatus }) },
+        data: {
+          status: dto.status,
+          ...(payoutStatus !== undefined && { payoutStatus }),
+        },
       });
 
       if (dto.status === 'confirmed' || dto.status === 'cancelled') {
         await this.notifications.notify(
           existing.renterId,
-          dto.status === 'confirmed' ? 'booking_confirmed' : 'booking_cancelled',
+          dto.status === 'confirmed'
+            ? 'booking_confirmed'
+            : 'booking_cancelled',
           dto.status === 'confirmed'
             ? `Your booking for ${existing.listing.title} is confirmed`
             : `Your booking for ${existing.listing.title} was cancelled`,
