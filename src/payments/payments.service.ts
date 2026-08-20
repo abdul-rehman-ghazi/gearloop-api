@@ -9,15 +9,20 @@ import { Prisma } from '../../generated/prisma/client';
 // needed.
 @Injectable()
 export class PaymentsService {
-  private readonly stripe: Stripe;
+  private _stripe?: Stripe;
 
-  constructor(private readonly config: ConfigService) {
-    // Ruling 3: no `if (!key)` guard and no fallback branch. `?? ''` is a
-    // type coercion only — an empty key is a string Stripe accepts at
-    // construction and rejects at the first real API call, which is exactly
-    // the "fail at the point of an actual charge, not at boot" behaviour we
-    // want. Never swallow or log-and-continue here the way EmailService does.
-    this.stripe = new Stripe(this.config.get<string>('STRIPE_SECRET_KEY') ?? '');
+  constructor(private readonly config: ConfigService) {}
+
+  // Ruling 3: no `if (!key)` guard and no fallback branch. `?? ''` is a
+  // type coercion only — an empty key is a string Stripe accepts at
+  // construction and rejects at the first real API call, which is exactly
+  // the "fail at the point of an actual charge, not at boot" behaviour we
+  // want. Never swallow or log-and-continue here the way EmailService does.
+  // Built lazily so a missing key fails at first use, not at DI boot time.
+  private get stripe(): Stripe {
+    return (this._stripe ??= new Stripe(
+      this.config.get<string>('STRIPE_SECRET_KEY') ?? '',
+    ));
   }
 
   // Places an auth-hold. Stripe errors (StripeCardError included) propagate

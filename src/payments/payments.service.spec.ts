@@ -38,6 +38,12 @@ function cardDeclineError() {
   });
 }
 
+describe('PaymentsService construction', () => {
+  it('does not throw when constructed with an empty STRIPE_SECRET_KEY', () => {
+    expect(() => new PaymentsService(makeConfig({}))).not.toThrow();
+  });
+});
+
 describe('PaymentsService.authorize', () => {
   beforeEach(() => {
     jest.clearAllMocks();
