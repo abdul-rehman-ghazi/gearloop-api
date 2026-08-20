@@ -7,10 +7,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async createThread(renterId: string, dto: CreateThreadDto) {
     const listing = await this.prisma.listing.findUnique({
@@ -37,6 +41,16 @@ export class MessagesService {
       data: { threadId: thread.id, senderId: renterId, text: dto.text },
     });
 
+    // The recipient on a first message is always the listing owner —
+    // createThread rejects owners messaging their own listing.
+    await this.notifications.notify(
+      listing.ownerId,
+      'message_received',
+      `New message about ${listing.title}`,
+      dto.text,
+      `/messages/${thread.id}`,
+    );
+
     return this.prisma.messageThread.update({
       where: { id: thread.id },
       data: { unreadForOwner: true, unreadForRenter: false },
@@ -51,6 +65,14 @@ export class MessagesService {
     await this.prisma.message.create({
       data: { threadId, senderId, text: dto.text },
     });
+
+    await this.notifications.notify(
+      isRenter ? thread.listing.ownerId : thread.renterId,
+      'message_received',
+      `New message about ${thread.listing.title}`,
+      dto.text,
+      `/messages/${threadId}`,
+    );
 
     return this.prisma.messageThread.update({
       where: { id: threadId },
