@@ -11,6 +11,7 @@ import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { Prisma } from '../../generated/prisma/client';
 
 const RENTER_SELECT = { id: true, name: true, initials: true } as const;
 
@@ -78,6 +79,39 @@ export class BookingsService {
       throw err;
     }
 
+    // Ruling 2: snapshot the listing's deposit onto the booking. `?? 0`
+    // covers listings written before this column existed.
+    const depositAmount = new Prisma.Decimal(listing.depositAmount ?? 0);
+
+    // Ruling 3: the deposit is a SECOND hold, placed here rather than at
+    // confirm so there is one card interaction and one failure path. It is
+    // never captured on confirm — it stays authorized until the return.
+    //
+    // ponytail: a Stripe auth-hold lapses after roughly 7 days, so a deposit
+    // for a booking that starts three weeks out will have expired before the
+    // handover. Upgrade path when this bites: a scheduled job that
+    // re-authorizes before the start date, or `extended_authorization` on the
+    // card networks that support it. Both need a scheduler this codebase
+    // does not have yet.
+    let depositIntentId: string | null = null;
+    if (depositAmount.gt(0)) {
+      try {
+        depositIntentId = await this.payments.authorize(
+          paymentMethod.processorPaymentMethodId,
+          depositAmount,
+        );
+      } catch (err) {
+        // The rental hold succeeded moments ago and this booking is not
+        // going to exist. Release it or the renter is left with an orphaned
+        // hold. Best-effort: the original error is what the caller needs.
+        await this.payments.release(paymentIntentId).catch(() => {});
+        if ((err as { type?: string })?.type === 'StripeCardError') {
+          throw new BadRequestException('Card was declined');
+        }
+        throw err;
+      }
+    }
+
     try {
       const booking = await this.prisma.booking.create({
         data: {
@@ -94,6 +128,9 @@ export class BookingsService {
           tax,
           total,
           paymentIntentId,
+          depositAmount,
+          depositIntentId,
+          depositStatus: depositIntentId ? 'held' : null,
         },
         include: { renter: { select: RENTER_SELECT } },
       });
@@ -119,8 +156,12 @@ export class BookingsService {
       // The booking row never got written — release the hold we just placed
       // so the renter's card isn't held against a booking that doesn't exist.
       // Best-effort: if the release itself fails, we still need to report the
-      // original error to the caller, not this cleanup failure.
+      // original error to the caller, not this cleanup failure. Same for the
+      // deposit hold, if one was placed.
       await this.payments.release(paymentIntentId).catch(() => {});
+      if (depositIntentId) {
+        await this.payments.release(depositIntentId).catch(() => {});
+      }
 
       if (this.isExclusionViolation(err)) {
         throw new ConflictException(

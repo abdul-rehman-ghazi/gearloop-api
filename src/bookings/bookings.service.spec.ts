@@ -478,3 +478,153 @@ describe('BookingsService.updateStatus authorization', () => {
     ).resolves.toEqual({ id: 'b1', status: 'confirmed' });
   });
 });
+
+describe('BookingsService.create deposit hold', () => {
+  const paymentMethod = {
+    id: 'pm1',
+    userId: 'renter-1',
+    processorPaymentMethodId: 'pm_card_visa',
+  };
+  const dto = {
+    listingId: 'l1',
+    paymentMethodId: 'pm1',
+    pickupMethod: 'pickup' as const,
+    startDate: '2026-09-01',
+    endDate: '2026-09-03',
+  };
+
+  function arrange(depositAmount: number) {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      pricePerDay: 100,
+      depositAmount: new Prisma.Decimal(depositAmount),
+      deletedAt: null,
+    });
+    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
+      paymentMethod,
+    );
+    (prisma.booking.create as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      requestNumber: 'GL-1',
+    });
+    return { prisma, notifications, payments };
+  }
+
+  it('places a second hold for the deposit and records it on the booking', async () => {
+    const { prisma, notifications, payments } = arrange(200);
+    (payments.authorize as jest.Mock)
+      .mockResolvedValueOnce('pi_rental')
+      .mockResolvedValueOnce('pi_deposit');
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.create('renter-1', dto);
+
+    expect(payments.authorize).toHaveBeenCalledTimes(2);
+    const [, depositArg] = (payments.authorize as jest.Mock).mock.calls[1] as [
+      string,
+      Prisma.Decimal,
+    ];
+    expect(depositArg.toString()).toBe('200');
+
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          paymentIntentId: 'pi_rental',
+          depositIntentId: 'pi_deposit',
+          depositStatus: 'held',
+        }),
+      }),
+    );
+  });
+
+  it('snapshots the deposit amount onto the booking without touching the total', async () => {
+    const { prisma, notifications, payments } = arrange(200);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.create('renter-1', dto);
+
+    const calls = (prisma.booking.create as jest.Mock).mock
+      .calls as unknown as Array<
+      [{ data: { depositAmount: Prisma.Decimal; total: Prisma.Decimal } }]
+    >;
+    const { data } = calls[0][0];
+    expect(data.depositAmount.toString()).toBe('200');
+    // 2 nights at 100 => subtotal 200, fee 20, tax 17.60, total 237.60 —
+    // unchanged by the deposit (Ruling 1).
+    expect(data.total.toString()).toBe('237.6');
+  });
+
+  it('places no deposit hold when the listing has no deposit', async () => {
+    const { prisma, notifications, payments } = arrange(0);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.create('renter-1', dto);
+
+    expect(payments.authorize).toHaveBeenCalledTimes(1);
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          depositIntentId: null,
+          depositStatus: null,
+        }),
+      }),
+    );
+  });
+
+  it('releases the rental hold and writes nothing when the deposit hold declines', async () => {
+    const { prisma, notifications, payments } = arrange(200);
+    (payments.authorize as jest.Mock)
+      .mockResolvedValueOnce('pi_rental')
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Your card was declined.'), {
+          type: 'StripeCardError',
+          code: 'card_declined',
+        }),
+      );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      BadRequestException,
+    );
+
+    expect(payments.release).toHaveBeenCalledWith('pi_rental');
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('reports a declined deposit hold as a card decline', async () => {
+    const { prisma, notifications, payments } = arrange(200);
+    (payments.authorize as jest.Mock)
+      .mockResolvedValueOnce('pi_rental')
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Your card was declined.'), {
+          type: 'StripeCardError',
+        }),
+      );
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      'Card was declined',
+    );
+  });
+
+  it('still releases the rental hold when a non-card error fails the deposit', async () => {
+    const { prisma, notifications, payments } = arrange(200);
+    (payments.authorize as jest.Mock)
+      .mockResolvedValueOnce('pi_rental')
+      .mockRejectedValueOnce(new Error('Stripe is down'));
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      'Stripe is down',
+    );
+
+    expect(payments.release).toHaveBeenCalledWith('pi_rental');
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+});
