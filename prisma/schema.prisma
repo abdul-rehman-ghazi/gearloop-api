@@ -48,6 +48,13 @@ enum DisputeStatus {
   resolved
 }
 
+enum DepositStatus {
+  held
+  released
+  claimed
+  partially_claimed
+}
+
 enum CardBrand {
   Visa
   Mastercard
@@ -65,6 +72,7 @@ enum NotificationType {
   message_received
   dispute_filed
   dispute_resolved
+  deposit_released
 }
 
 // ── Core entities ─────────────────────────────────────
@@ -102,6 +110,10 @@ model Listing {
   category    ListingCategory
   location    String
   pricePerDay Decimal         @db.Decimal(10, 2)
+  // What the owner asks renters to put up as a security deposit. 0 (the
+  // default) means this listing takes no deposit and booking creation
+  // places no second hold.
+  depositAmount Decimal @default(0) @db.Decimal(10, 2)
   description String          @db.Text
   // ponytail: images stored as data URLs, no object storage. Fine for
   // mock/dev scale; move to S3/R2 + store URLs here if photo count/size
@@ -140,6 +152,18 @@ model Booking {
   // because a booking row only ever exists after a successful authorize,
   // but rows written before this feature shipped have no intent.
   paymentIntentId String?
+
+  // Second Stripe PaymentIntent, held (never captured) for the rental's
+  // duration and released on a clean return. Separate from paymentIntentId
+  // because the rental hold is captured at `confirmed` while the deposit
+  // must stay uncaptured — one intent cannot be both.
+  depositIntentId String?
+  depositStatus   DepositStatus?
+
+  // Snapshot, same reasoning as pricePerDayAtBooking: an owner raising a
+  // listing's deposit must not retroactively change what a past booking
+  // held. Deliberately NOT part of subtotal/total.
+  depositAmount Decimal @default(0) @db.Decimal(10, 2)
 
   // Pricing snapshot at time of booking — stored, not recomputed, since
   // Listing.pricePerDay can change later and a past booking's receipt
@@ -231,6 +255,15 @@ model Dispute {
   id     String        @id @default(uuid())
   status DisputeStatus @default(flagged)
   detail String        @db.Text
+
+  // Null = a plain free-text dispute, exactly as before this feature.
+  // Non-null = a damage claim against the booking's deposit. Bounded by
+  // booking.depositAmount at the service layer (no DB check constraint,
+  // matching the Review.rating precedent).
+  claimAmount Decimal? @db.Decimal(10, 2)
+  // What an admin actually awarded: 0 <= resolvedAmount <= claimAmount.
+  // Drives the partial capture at resolution time.
+  resolvedAmount Decimal? @db.Decimal(10, 2)
 
   bookingId String  @unique
   booking   Booking @relation(fields: [bookingId], references: [id])
