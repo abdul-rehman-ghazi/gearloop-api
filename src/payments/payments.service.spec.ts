@@ -223,3 +223,64 @@ describe('PaymentsService.release', () => {
     );
   });
 });
+
+describe('PaymentsService.capture partial', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('captures only the requested amount when one is given', async () => {
+    mockStripeClient.paymentIntents.capture.mockResolvedValue({
+      id: 'pi_dep_1',
+      status: 'succeeded',
+    });
+
+    const service = makeService();
+    await service.capture('pi_dep_1', new Prisma.Decimal('40.00'));
+
+    expect(mockStripeClient.paymentIntents.capture).toHaveBeenCalledWith(
+      'pi_dep_1',
+      { amount_to_capture: 4000 },
+    );
+  });
+
+  it('rounds fractional cents on a partial capture', async () => {
+    mockStripeClient.paymentIntents.capture.mockResolvedValue({
+      id: 'pi_dep_1',
+      status: 'succeeded',
+    });
+
+    const service = makeService();
+    await service.capture('pi_dep_1', new Prisma.Decimal('12.345'));
+
+    expect(mockStripeClient.paymentIntents.capture).toHaveBeenCalledWith(
+      'pi_dep_1',
+      { amount_to_capture: 1235 },
+    );
+  });
+
+  it('still captures in full when no amount is given', async () => {
+    mockStripeClient.paymentIntents.capture.mockResolvedValue({
+      id: 'pi_dep_1',
+      status: 'succeeded',
+    });
+
+    const service = makeService();
+    await service.capture('pi_dep_1');
+
+    expect(mockStripeClient.paymentIntents.capture).toHaveBeenCalledWith(
+      'pi_dep_1',
+    );
+  });
+
+  it('propagates a partial-capture failure un-caught', async () => {
+    mockStripeClient.paymentIntents.capture.mockRejectedValue(
+      new Error('amount_to_capture exceeds the authorized amount'),
+    );
+
+    const service = makeService();
+    await expect(
+      service.capture('pi_dep_1', new Prisma.Decimal('999.00')),
+    ).rejects.toThrow('amount_to_capture exceeds the authorized amount');
+  });
+});

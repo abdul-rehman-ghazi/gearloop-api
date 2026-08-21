@@ -48,8 +48,21 @@ export class PaymentsService {
     return intent.id;
   }
 
-  async capture(paymentIntentId: string): Promise<void> {
-    await this.stripe.paymentIntents.capture(paymentIntentId);
+  // Ruling 4: one optional argument instead of a fourth verb. Passing an
+  // amount performs a partial capture, and Stripe releases the uncaptured
+  // remainder back to the cardholder automatically — which is exactly the
+  // "partially claimed deposit" semantic, for free.
+  async capture(
+    paymentIntentId: string,
+    amount?: Prisma.Decimal,
+  ): Promise<void> {
+    if (amount === undefined) {
+      await this.stripe.paymentIntents.capture(paymentIntentId);
+      return;
+    }
+    await this.stripe.paymentIntents.capture(paymentIntentId, {
+      amount_to_capture: Math.round(amount.toNumber() * 100),
+    });
   }
 
   // One method, two Stripe calls depending on state, so callers don't need
