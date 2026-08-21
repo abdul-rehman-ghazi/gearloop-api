@@ -204,7 +204,14 @@ export class DisputesService {
       where: { id },
       include: {
         booking: {
-          include: { renter: true, listing: { include: { owner: true } } },
+          include: {
+            renter: true,
+            listing: { include: { owner: true } },
+            // Read-only evidence for the admin setting resolvedAmount. This
+            // is the only coupling between handoff photos and disputes — no
+            // write path reads this table and no claim requires a photo.
+            handoffPhotos: true,
+          },
         },
       },
     });

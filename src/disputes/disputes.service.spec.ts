@@ -450,3 +450,40 @@ describe('DisputesService.updateStatus deposit resolution', () => {
     expect(payments.release).not.toHaveBeenCalled();
   });
 });
+
+describe('DisputesService.findByIdForAdmin handoff evidence', () => {
+  it('includes the booking handoff photos', async () => {
+    const prisma = makePrisma();
+    (prisma.dispute.findUnique as jest.Mock).mockResolvedValue({
+      id: 'd1',
+      status: 'flagged',
+      claimAmount: new Prisma.Decimal('80.00'),
+      booking: {
+        id: 'b1',
+        renter: { id: 'renter-1', passwordHash: 'x' },
+        listing: { id: 'l1', owner: { id: 'owner-1', passwordHash: 'y' } },
+        handoffPhotos: [{ id: 'p1', stage: 'pickup' }],
+      },
+    });
+
+    const service = new DisputesService(
+      prisma,
+      makeNotifications(),
+      makePayments(),
+    );
+    const result = await service.findByIdForAdmin('d1');
+
+    // The include is what matters: an admin setting resolvedAmount needs the
+    // evidence on the same screen as the number.
+    const calls = (prisma.dispute.findUnique as jest.Mock).mock
+      .calls as unknown as Array<
+      [{ include: { booking: { include: { handoffPhotos: boolean } } } }]
+    >;
+    const { include } = calls[0][0];
+    expect(include.booking.include.handoffPhotos).toBe(true);
+    expect(
+      (result as unknown as { booking: { handoffPhotos: unknown } }).booking
+        .handoffPhotos,
+    ).toEqual([{ id: 'p1', stage: 'pickup' }]);
+  });
+});
