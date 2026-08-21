@@ -55,6 +55,13 @@ enum DepositStatus {
   partially_claimed
 }
 
+enum HandoffStage {
+  pickup
+  // `returned`, not `return` — `return` is a JS/TS keyword and the generated
+  // client exposes enum values as bare property names.
+  returned
+}
+
 enum CardBrand {
   Visa
   Mastercard
@@ -100,6 +107,7 @@ model User {
   reviewsAuthored Review[] @relation("ReviewsAuthored")
   reviewsReceived Review[] @relation("ReviewsReceived")
   notifications Notification[]
+  handoffPhotos HandoffPhoto[]
 
   @@map("users")
 }
@@ -186,6 +194,7 @@ model Booking {
 
   dispute Dispute?
   reviews Review[]
+  handoffPhotos HandoffPhoto[]
 
   // TODO before going live: Postgres can't enforce "no overlapping date
   // ranges per listing" through Prisma alone — that needs a raw SQL
@@ -297,6 +306,32 @@ model Review {
 
   @@unique([bookingId, direction])
   @@map("reviews")
+}
+
+model HandoffPhoto {
+  id    String       @id @default(uuid())
+  stage HandoffStage
+  // A URL the client uploaded somewhere else. This API stores no bytes and
+  // has no upload path — same convention as Listing.images, same upgrade
+  // path (object storage) when mock/dev scale stops holding.
+  url   String
+  note  String?      @db.Text
+
+  // Server-set, never client-supplied. A timestamp the photographer chooses
+  // is not evidence, and "timestamped" is the entire point of this table.
+  createdAt DateTime @default(now())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  // Renter-or-owner is derived by comparing this to booking.renterId, the
+  // same way Message derives it from senderId — storing it would buy
+  // nothing here (no unique constraint depends on it) and could drift.
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@map("handoff_photos")
 }
 
 model Notification {
