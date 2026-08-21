@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,12 +9,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UpdateDisputeStatusDto } from './dto/update-dispute-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Prisma } from '../../generated/prisma/client';
+import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class DisputesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async create(userId: string, dto: CreateDisputeDto) {
@@ -33,9 +37,32 @@ export class DisputesService {
       throw new ConflictException('A dispute already exists for this booking');
     }
 
+    // Ruling 5/6: a claim is the same Dispute row with money attached, and
+    // only the owner has damage to claim. A claimless dispute keeps the
+    // existing either-party rule untouched.
+    if (dto.claimAmount !== undefined) {
+      if (booking.listing.ownerId !== userId) {
+        throw new ForbiddenException(
+          'Only the owner can claim against the deposit',
+        );
+      }
+      // One check covers "no deposit was ever taken", "already released"
+      // and "already claimed".
+      if (booking.depositStatus !== 'held') {
+        throw new ConflictException('No deposit is held for this booking');
+      }
+      if (new Prisma.Decimal(dto.claimAmount).gt(booking.depositAmount)) {
+        throw new BadRequestException('Claim exceeds the deposit held');
+      }
+    }
+
     const [dispute] = await this.prisma.$transaction([
       this.prisma.dispute.create({
-        data: { bookingId: dto.bookingId, detail: dto.detail },
+        data: {
+          bookingId: dto.bookingId,
+          detail: dto.detail,
+          claimAmount: dto.claimAmount,
+        },
       }),
       this.prisma.booking.update({
         where: { id: dto.bookingId },
@@ -50,7 +77,9 @@ export class DisputesService {
       recipientId,
       'dispute_filed',
       `A dispute was filed for booking ${booking.requestNumber}`,
-      dto.detail,
+      dto.claimAmount !== undefined
+        ? `A claim of ${dto.claimAmount} against your deposit: ${dto.detail}`
+        : dto.detail,
       `/disputes/${dispute.id}`,
     );
 
@@ -87,24 +116,68 @@ export class DisputesService {
   async updateStatus(id: string, dto: UpdateDisputeStatusDto) {
     const dispute = await this.findById(id);
 
-    if (dto.status === 'resolved' && dispute.booking.status !== 'cancelled') {
-      const [updated] = await this.prisma.$transaction([
-        this.prisma.dispute.update({
-          where: { id },
-          data: { status: dto.status },
-        }),
-        this.prisma.booking.update({
-          where: { id: dispute.bookingId },
-          data: { payoutStatus: 'pending' },
-        }),
-      ]);
-      await this.notifyResolved(dispute);
-      return updated;
+    // Money moves before the row changes: a Stripe failure must leave the
+    // dispute unresolved rather than marked resolved with the funds stuck.
+    let depositStatus: 'released' | 'claimed' | 'partially_claimed' | undefined;
+
+    if (dto.status === 'resolved' && dispute.claimAmount != null) {
+      const awarded = new Prisma.Decimal(dto.resolvedAmount ?? 0);
+      if (awarded.gt(dispute.claimAmount)) {
+        throw new BadRequestException('Resolution exceeds the amount claimed');
+      }
+
+      try {
+        if (!dispute.booking.depositIntentId) {
+          throw new Error('booking has no deposit intent to settle');
+        }
+        if (awarded.gt(0)) {
+          // Partial capture: Stripe releases the uncaptured remainder to the
+          // renter automatically, which is the partially_claimed semantic.
+          await this.payments.capture(dispute.booking.depositIntentId, awarded);
+          depositStatus = awarded.equals(dispute.booking.depositAmount)
+            ? 'claimed'
+            : 'partially_claimed';
+        } else {
+          // Ruling 8: silence means no damage awarded — the safe default for
+          // the party who isn't in the room.
+          await this.payments.release(dispute.booking.depositIntentId);
+          depositStatus = 'released';
+        }
+      } catch (err) {
+        throw new ConflictException('Deposit could not be claimed', {
+          cause: err,
+        });
+      }
+    } else if (
+      dto.resolvedAmount !== undefined &&
+      dispute.claimAmount == null
+    ) {
+      throw new BadRequestException('This dispute has no claim to resolve');
     }
 
-    const updated = await this.prisma.dispute.update({
-      where: { id },
-      data: { status: dto.status },
+    // `payoutStatus: 'pending'` only applies when the booking isn't
+    // cancelled (a cancelled booking never pays out); `depositStatus` is
+    // written whenever this resolution settled a claim, regardless.
+    const bookingWrite = {
+      ...(dto.status === 'resolved' &&
+        dispute.booking.status !== 'cancelled' && {
+          payoutStatus: 'pending' as const,
+        }),
+      ...(depositStatus && { depositStatus }),
+    };
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.dispute.update({
+        where: { id },
+        data: { status: dto.status, resolvedAmount: dto.resolvedAmount },
+      });
+      if (Object.keys(bookingWrite).length > 0) {
+        await tx.booking.update({
+          where: { id: dispute.bookingId },
+          data: bookingWrite,
+        });
+      }
+      return d;
     });
 
     if (dto.status === 'resolved') {
