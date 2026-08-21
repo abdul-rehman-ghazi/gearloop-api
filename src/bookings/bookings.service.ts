@@ -173,9 +173,15 @@ export class BookingsService {
   }
 
   async findById(id: string) {
+    // `dispute` is here for the deposit-release decision in updateStatus:
+    // a clean return releases, a disputed one keeps the money held.
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: { listing: true, renter: { select: RENTER_SELECT } },
+      include: {
+        listing: true,
+        renter: { select: RENTER_SELECT },
+        dispute: true,
+      },
     });
     if (!booking) throw new NotFoundException('Booking not found');
     return booking;
@@ -201,6 +207,14 @@ export class BookingsService {
     const existing = await this.findById(id);
     if (existing.renterId !== userId && existing.listing.ownerId !== userId) {
       throw new ForbiddenException('You are not a party to this booking');
+    }
+
+    // Ruling 6: completing a booking is what releases the deposit, so
+    // leaving this open to the renter would let them release their own
+    // deposit before the owner has looked at the gear. Money-security
+    // boundary, not polish.
+    if (dto.status === 'completed' && existing.listing.ownerId !== userId) {
+      throw new ForbiddenException('Only the owner can complete a booking');
     }
 
     if (dto.status === 'confirmed') {
@@ -242,6 +256,26 @@ export class BookingsService {
       }
     }
 
+    // Ruling 7: "clean return" == completed with no dispute on the booking.
+    // A cancellation always releases. Anything else leaves the hold alone.
+    const releasesDeposit =
+      existing.depositStatus === 'held' &&
+      (dto.status === 'cancelled' ||
+        (dto.status === 'completed' && !existing.dispute));
+
+    if (releasesDeposit) {
+      try {
+        if (!existing.depositIntentId) {
+          throw new Error('booking has no deposit intent to release');
+        }
+        await this.payments.release(existing.depositIntentId);
+      } catch (err) {
+        throw new ConflictException('Deposit could not be released', {
+          cause: err,
+        });
+      }
+    }
+
     // `paid` is never written here: the capture above moves funds into the
     // platform's Stripe balance, so `pending` truthfully means "captured,
     // awaiting a payout job". The payout job itself is out of scope
@@ -259,6 +293,7 @@ export class BookingsService {
         data: {
           status: dto.status,
           ...(payoutStatus !== undefined && { payoutStatus }),
+          ...(releasesDeposit && { depositStatus: 'released' as const }),
         },
       });
 
@@ -274,6 +309,16 @@ export class BookingsService {
           dto.status === 'confirmed'
             ? `Booking ${existing.requestNumber} is confirmed.`
             : `Booking ${existing.requestNumber} was cancelled.`,
+          `/bookings/${id}`,
+        );
+      }
+
+      if (releasesDeposit) {
+        await this.notifications.notify(
+          existing.renterId,
+          'deposit_released',
+          `Your security deposit for ${existing.listing.title} was released`,
+          `The hold on your card for booking ${existing.requestNumber} has been released.`,
           `/bookings/${id}`,
         );
       }
