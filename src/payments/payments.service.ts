@@ -66,17 +66,33 @@ export class PaymentsService {
   }
 
   // One method, two Stripe calls depending on state, so callers don't need
-  // to know whether the hold was already captured.
-  async release(paymentIntentId: string): Promise<void> {
+  // to know whether the hold was already captured. `amount` performs a
+  // partial refund on an already-captured intent (cancellation tiers); it
+  // has no meaning on an uncaptured hold, so that combination throws rather
+  // than silently doing a full release.
+  async release(
+    paymentIntentId: string,
+    amount?: Prisma.Decimal,
+  ): Promise<void> {
     const intent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (intent.status === 'requires_capture') {
+      if (amount !== undefined) {
+        throw new Error(
+          'Cannot partially release a PaymentIntent that has not been captured',
+        );
+      }
       await this.stripe.paymentIntents.cancel(paymentIntentId);
       return;
     }
 
     if (intent.status === 'succeeded') {
-      await this.stripe.refunds.create({ payment_intent: paymentIntentId });
+      await this.stripe.refunds.create({
+        payment_intent: paymentIntentId,
+        ...(amount !== undefined && {
+          amount: Math.round(amount.toNumber() * 100),
+        }),
+      });
       return;
     }
 

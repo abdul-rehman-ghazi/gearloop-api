@@ -82,6 +82,17 @@ enum NotificationType {
   deposit_released
 }
 
+enum CancellationPolicy {
+  flexible
+  moderate
+  strict
+}
+
+enum CancelledBy {
+  renter
+  owner
+}
+
 // ── Core entities ─────────────────────────────────────
 
 model User {
@@ -122,6 +133,10 @@ model Listing {
   // default) means this listing takes no deposit and booking creation
   // places no second hold.
   depositAmount Decimal @default(0) @db.Decimal(10, 2)
+  // Renter-facing refund tiers on cancellation. Owner picks this at
+  // create/edit time; a past booking snapshots the rate it was cancelled
+  // under (Booking.refundAmount) so a later policy change can't rewrite it.
+  cancellationPolicy CancellationPolicy @default(moderate)
   description String          @db.Text
   // ponytail: images stored as data URLs, no object storage. Fine for
   // mock/dev scale; move to S3/R2 + store URLs here if photo count/size
@@ -173,6 +188,15 @@ model Booking {
   // listing's deposit must not retroactively change what a past booking
   // held. Deliberately NOT part of subtotal/total.
   depositAmount Decimal @default(0) @db.Decimal(10, 2)
+
+  // Cancellation record. Null until the booking is cancelled. refundAmount
+  // is a snapshot of what was actually released/refunded — same reasoning
+  // as pricePerDayAtBooking, so a later change to the listing's
+  // cancellationPolicy can't rewrite a past cancellation's terms.
+  cancelledAt        DateTime?
+  cancelledBy        CancelledBy?
+  cancellationReason String?
+  refundAmount       Decimal?     @db.Decimal(10, 2)
 
   // Pricing snapshot at time of booking — stored, not recomputed, since
   // Listing.pricePerDay can change later and a past booking's receipt

@@ -9,9 +9,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
+import { calculateRefund } from './booking-cancellation.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { Prisma } from '../../generated/prisma/client';
+import type {
+  BookingStatus,
+  CancellationPolicy,
+} from '../../generated/prisma/enums';
 
 const RENTER_SELECT = { id: true, name: true, initials: true } as const;
 
@@ -172,9 +177,11 @@ export class BookingsService {
     }
   }
 
-  async findById(id: string) {
-    // `dispute` is here for the deposit-release decision in updateStatus:
-    // a clean return releases, a disputed one keeps the money held.
+  // `dispute` is here for the deposit-release decision in updateStatus:
+  // a clean return releases, a disputed one keeps the money held. Used
+  // internally by updateStatus, which needs the raw row, not the
+  // presentational refundQuote below.
+  private async getBookingOrThrow(id: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
       include: {
@@ -187,24 +194,53 @@ export class BookingsService {
     return booking;
   }
 
-  findByUser(renterId: string) {
-    return this.prisma.booking.findMany({
-      where: { renterId },
-      include: { renter: { select: RENTER_SELECT } },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findById(id: string) {
+    const booking = await this.getBookingOrThrow(id);
+    return { ...booking, refundQuote: this.quoteRefund(booking) };
   }
 
-  findByOwner(ownerId: string) {
-    return this.prisma.booking.findMany({
+  async findByUser(renterId: string) {
+    const bookings = await this.prisma.booking.findMany({
+      where: { renterId },
+      include: { listing: true, renter: { select: RENTER_SELECT } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return bookings.map((b) => ({ ...b, refundQuote: this.quoteRefund(b) }));
+  }
+
+  async findByOwner(ownerId: string) {
+    const bookings = await this.prisma.booking.findMany({
       where: { listing: { ownerId } },
       include: { listing: true, renter: { select: RENTER_SELECT } },
       orderBy: { createdAt: 'desc' },
     });
+    return bookings.map((b) => ({ ...b, refundQuote: this.quoteRefund(b) }));
+  }
+
+  // What the renter would get back if they cancelled this booking right
+  // now. Quoted from the renter's side since that's the only party the UI
+  // shows a "Cancel booking" affordance to; owner cancels always refund in
+  // full regardless of this number.
+  private quoteRefund(booking: {
+    status: BookingStatus;
+    total: Prisma.Decimal;
+    startDate: Date;
+    listing: { cancellationPolicy: CancellationPolicy };
+  }): Prisma.Decimal | null {
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return null;
+    }
+    return calculateRefund({
+      policy: booking.listing.cancellationPolicy,
+      total: booking.total,
+      startDate: booking.startDate,
+      status: booking.status,
+      cancelledBy: 'renter',
+    });
   }
 
   async updateStatus(id: string, userId: string, dto: UpdateBookingStatusDto) {
-    const existing = await this.findById(id);
+    const existing = await this.getBookingOrThrow(id);
     if (existing.renterId !== userId && existing.listing.ownerId !== userId) {
       throw new ForbiddenException('You are not a party to this booking');
     }
@@ -215,6 +251,18 @@ export class BookingsService {
     // boundary, not polish.
     if (dto.status === 'completed' && existing.listing.ownerId !== userId) {
       throw new ForbiddenException('Only the owner can complete a booking');
+    }
+
+    // A completed or already-cancelled booking has no further transition —
+    // without this, re-cancelling a cancelled row (or cancelling a
+    // completed one) would release/refund a PaymentIntent a second time.
+    if (
+      dto.status === 'cancelled' &&
+      (existing.status === 'completed' || existing.status === 'cancelled')
+    ) {
+      throw new ConflictException(
+        `Cannot cancel a booking that is already ${existing.status}`,
+      );
     }
 
     if (dto.status === 'confirmed') {
@@ -242,13 +290,39 @@ export class BookingsService {
       }
     }
 
+    const cancelledBy =
+      dto.status === 'cancelled'
+        ? existing.renterId === userId
+          ? ('renter' as const)
+          : ('owner' as const)
+        : undefined;
+
+    const refundAmount =
+      dto.status === 'cancelled'
+        ? calculateRefund({
+            policy: existing.listing.cancellationPolicy,
+            total: existing.total,
+            startDate: existing.startDate,
+            status: existing.status,
+            cancelledBy: cancelledBy!,
+          })
+        : undefined;
+
     if (dto.status === 'cancelled') {
       // release() figures out cancel-vs-refund from the intent's own status.
+      // A zero-refund tier leaves the already-captured funds untouched —
+      // no Stripe call at all.
       try {
         if (!existing.paymentIntentId) {
           throw new Error('booking has no payment intent to release');
         }
-        await this.payments.release(existing.paymentIntentId);
+        if (!refundAmount!.isZero()) {
+          if (refundAmount!.equals(existing.total)) {
+            await this.payments.release(existing.paymentIntentId);
+          } else {
+            await this.payments.release(existing.paymentIntentId, refundAmount);
+          }
+        }
       } catch (err) {
         throw new ConflictException('Payment could not be released', {
           cause: err,
@@ -294,21 +368,41 @@ export class BookingsService {
           status: dto.status,
           ...(payoutStatus !== undefined && { payoutStatus }),
           ...(releasesDeposit && { depositStatus: 'released' as const }),
+          ...(dto.status === 'cancelled' && {
+            cancelledAt: new Date(),
+            cancelledBy,
+            cancellationReason: dto.reason,
+            refundAmount,
+          }),
         },
       });
 
-      if (dto.status === 'confirmed' || dto.status === 'cancelled') {
+      if (dto.status === 'confirmed') {
         await this.notifications.notify(
           existing.renterId,
-          dto.status === 'confirmed'
-            ? 'booking_confirmed'
-            : 'booking_cancelled',
-          dto.status === 'confirmed'
-            ? `Your booking for ${existing.listing.title} is confirmed`
-            : `Your booking for ${existing.listing.title} was cancelled`,
-          dto.status === 'confirmed'
-            ? `Booking ${existing.requestNumber} is confirmed.`
-            : `Booking ${existing.requestNumber} was cancelled.`,
+          'booking_confirmed',
+          `Your booking for ${existing.listing.title} is confirmed`,
+          `Booking ${existing.requestNumber} is confirmed.`,
+          `/bookings/${id}`,
+        );
+      }
+
+      if (dto.status === 'cancelled') {
+        // Notify whichever party didn't cancel — a renter cancelling
+        // otherwise never tells the owner their gear is free again.
+        const recipientId =
+          cancelledBy === 'renter'
+            ? existing.listing.ownerId
+            : existing.renterId;
+        const refundNote =
+          cancelledBy === 'owner'
+            ? ` You'll be refunded $${refundAmount!.toString()}.`
+            : '';
+        await this.notifications.notify(
+          recipientId,
+          'booking_cancelled',
+          `Your booking for ${existing.listing.title} was cancelled`,
+          `Booking ${existing.requestNumber} was cancelled.${refundNote}`,
           `/bookings/${id}`,
         );
       }

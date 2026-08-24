@@ -11,7 +11,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { ListingCategory } from '../../../generated/prisma/enums';
+import {
+  CancellationPolicy,
+  ListingCategory,
+} from '../../../generated/prisma/enums';
 
 export class CreateListingDto {
   @IsString()
@@ -38,6 +41,11 @@ export class CreateListingDto {
   @Min(0)
   @Max(10000)
   depositAmount?: number;
+
+  // Absent means the model default (`moderate`).
+  @IsOptional()
+  @IsEnum(CancellationPolicy)
+  cancellationPolicy?: CancellationPolicy;
 
   @IsString()
   @IsNotEmpty()

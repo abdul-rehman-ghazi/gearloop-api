@@ -222,6 +222,38 @@ describe('PaymentsService.release', () => {
       'Stripe is down',
     );
   });
+
+  it('partially refunds an already-captured intent when given an amount', async () => {
+    mockStripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: 'pi_test_1',
+      status: 'succeeded',
+    });
+    mockStripeClient.refunds.create.mockResolvedValue({ id: 're_test_1' });
+
+    const service = makeService();
+    await service.release('pi_test_1', new Prisma.Decimal(50));
+
+    expect(mockStripeClient.refunds.create).toHaveBeenCalledWith({
+      payment_intent: 'pi_test_1',
+      amount: 5000,
+    });
+  });
+
+  it('rejects a partial release against an uncaptured hold', async () => {
+    mockStripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: 'pi_test_1',
+      status: 'requires_capture',
+    });
+
+    const service = makeService();
+    await expect(
+      service.release('pi_test_1', new Prisma.Decimal(50)),
+    ).rejects.toThrow(
+      'Cannot partially release a PaymentIntent that has not been captured',
+    );
+
+    expect(mockStripeClient.paymentIntents.cancel).not.toHaveBeenCalled();
+  });
 });
 
 describe('PaymentsService.capture partial', () => {

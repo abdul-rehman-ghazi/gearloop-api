@@ -89,10 +89,17 @@ describe('BookingsService.updateStatus notifications', () => {
     requestNumber: 'GL-1',
     listingId: 'l1',
     renterId: 'renter-1',
+    status: 'pending',
     paymentIntentId: 'pi_test_1',
+    total: new Prisma.Decimal(150),
     startDate: new Date('2026-09-01'),
     endDate: new Date('2026-09-03'),
-    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
   };
 
   it('notifies the renter when the booking is confirmed', async () => {
@@ -119,7 +126,7 @@ describe('BookingsService.updateStatus notifications', () => {
     );
   });
 
-  it('notifies the renter when the booking is cancelled', async () => {
+  it('notifies the owner when the renter cancels', async () => {
     const prisma = makePrisma();
     const notifications = makeNotifications();
     (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
@@ -132,10 +139,31 @@ describe('BookingsService.updateStatus notifications', () => {
     await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
 
     expect(notifications.notify).toHaveBeenCalledWith(
-      'renter-1',
+      'owner-1',
       'booking_cancelled',
       'Your booking for Canon R5 was cancelled',
       'Booking GL-1 was cancelled.',
+      '/bookings/b1',
+    );
+  });
+
+  it('notifies the renter with the refund amount when the owner cancels', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'cancelled',
+    });
+
+    const service = new BookingsService(prisma, notifications, makePayments());
+    await service.updateStatus('b1', 'owner-1', { status: 'cancelled' });
+
+    expect(notifications.notify).toHaveBeenCalledWith(
+      'renter-1',
+      'booking_cancelled',
+      'Your booking for Canon R5 was cancelled',
+      "Booking GL-1 was cancelled. You'll be refunded $150.",
       '/bookings/b1',
     );
   });
@@ -307,10 +335,17 @@ describe('BookingsService.updateStatus payments', () => {
     requestNumber: 'GL-1',
     listingId: 'l1',
     renterId: 'renter-1',
+    status: 'confirmed',
     paymentIntentId: 'pi_test_1',
+    total: new Prisma.Decimal(150),
     startDate: new Date('2026-09-01'),
     endDate: new Date('2026-09-03'),
-    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
   };
 
   function arrange() {
@@ -642,9 +677,15 @@ describe('BookingsService.updateStatus deposit release', () => {
     paymentIntentId: 'pi_rental',
     depositIntentId: 'pi_deposit',
     depositStatus: 'held',
+    total: new Prisma.Decimal(150),
     startDate: new Date('2026-09-01'),
     endDate: new Date('2026-09-03'),
-    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
     dispute: null,
   };
 
@@ -845,5 +886,165 @@ describe('BookingsService availability blackouts', () => {
 
     expect(payments.capture).not.toHaveBeenCalled();
     expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('BookingsService.updateStatus cancellation refund tiers', () => {
+  // "now" for these tests is whatever the real clock is; startDate is set
+  // relative to it via hoursFromNow so the tests aren't tied to a fixed date.
+  function hoursFromNow(hours: number): Date {
+    return new Date(Date.now() + hours * 60 * 60 * 1000);
+  }
+
+  function confirmedBooking(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'b1',
+      requestNumber: 'GL-1',
+      listingId: 'l1',
+      renterId: 'renter-1',
+      status: 'confirmed',
+      paymentIntentId: 'pi_test_1',
+      depositIntentId: null,
+      depositStatus: null,
+      total: new Prisma.Decimal(200),
+      startDate: hoursFromNow(200), // well beyond any tier's cutoff
+      endDate: new Date(Date.now() + 210 * 60 * 60 * 1000),
+      dispute: null,
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'strict',
+      },
+      ...overrides,
+    };
+  }
+
+  function arrange(booking: ReturnType<typeof confirmedBooking>) {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+    (prisma.booking.update as jest.Mock).mockImplementation(
+      (args: { data: Record<string, unknown> }) => ({
+        id: 'b1',
+        status: 'cancelled',
+        ...args.data,
+      }),
+    );
+    return { prisma, notifications, payments };
+  }
+
+  it('renter cancelling within a moderate-policy cutoff triggers a 50% partial refund', async () => {
+    const booking = confirmedBooking({
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'moderate',
+      },
+      startDate: hoursFromNow(2), // inside moderate's 120h cutoff -> 50%
+    });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
+
+    expect(payments.release).toHaveBeenCalledWith(
+      'pi_test_1',
+      expect.objectContaining({ toString: expect.any(Function) }),
+    );
+    const [, amount] = (payments.release as jest.Mock).mock.calls[0] as [
+      string,
+      Prisma.Decimal,
+    ];
+    expect(amount.toString()).toBe('100');
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'cancelled',
+          cancelledBy: 'renter',
+        }),
+      }),
+    );
+  });
+
+  it('cancelling a pending booking always fully releases the hold, regardless of policy', async () => {
+    const booking = confirmedBooking({ status: 'pending' });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
+
+    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
+  });
+
+  it('does not call Stripe when the refund tier is 0%', async () => {
+    const booking = confirmedBooking({
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'flexible',
+      },
+      startDate: hoursFromNow(1), // inside flexible's 24h cutoff -> 0% refund
+    });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    const updated = await service.updateStatus('b1', 'renter-1', {
+      status: 'cancelled',
+    });
+
+    expect(payments.release).not.toHaveBeenCalled();
+    expect(updated.status).toBe('cancelled');
+  });
+
+  it('rejects cancelling a booking that is already completed', async () => {
+    const booking = confirmedBooking({ status: 'completed' });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(payments.release).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects cancelling a booking that is already cancelled', async () => {
+    const booking = confirmedBooking({ status: 'cancelled' });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('an owner cancelling always fully refunds, even inside the cutoff', async () => {
+    const booking = confirmedBooking({
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'strict',
+      },
+      startDate: hoursFromNow(1),
+    });
+    const { prisma, notifications, payments } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await service.updateStatus('b1', 'owner-1', { status: 'cancelled' });
+
+    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ cancelledBy: 'owner' }),
+      }),
+    );
   });
 });
