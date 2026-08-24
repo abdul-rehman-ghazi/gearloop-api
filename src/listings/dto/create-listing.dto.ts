@@ -2,6 +2,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEnum,
+  IsISO31661Alpha2,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -25,9 +26,10 @@ export class CreateListingDto {
   @IsEnum(ListingCategory)
   category: ListingCategory;
 
-  @IsString()
-  @IsNotEmpty()
-  location: string;
+  // ISO 3166-1 alpha-2. Drives the listing's charge/display currency —
+  // see src/common/country-currency.ts.
+  @IsISO31661Alpha2()
+  country: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()

@@ -1,8 +1,8 @@
 import {
   IsDateString,
   IsEnum,
+  IsISO31661Alpha2,
   IsOptional,
-  IsString,
   IsUUID,
 } from 'class-validator';
 import { ListingCategory } from '../../../generated/prisma/enums';
@@ -14,8 +14,8 @@ export class SearchListingsDto extends PaginationDto {
   category?: ListingCategory;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  @IsISO31661Alpha2()
+  country?: string;
 
   @IsOptional()
   @IsDateString()

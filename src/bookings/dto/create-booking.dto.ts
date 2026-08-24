@@ -13,7 +13,4 @@ export class CreateBookingDto {
 
   @IsEnum(PickupMethod)
   pickupMethod: PickupMethod;
-
-  @IsUUID()
-  paymentMethodId: string;
 }

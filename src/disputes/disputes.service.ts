@@ -10,14 +10,12 @@ import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UpdateDisputeStatusDto } from './dto/update-dispute-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Prisma } from '../../generated/prisma/client';
-import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class DisputesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
-    private readonly payments: PaymentsService,
   ) {}
 
   async create(userId: string, dto: CreateDisputeDto) {
@@ -56,19 +54,13 @@ export class DisputesService {
       }
     }
 
-    const [dispute] = await this.prisma.$transaction([
-      this.prisma.dispute.create({
-        data: {
-          bookingId: dto.bookingId,
-          detail: dto.detail,
-          claimAmount: dto.claimAmount,
-        },
-      }),
-      this.prisma.booking.update({
-        where: { id: dto.bookingId },
-        data: { payoutStatus: 'on_hold' },
-      }),
-    ]);
+    const dispute = await this.prisma.dispute.create({
+      data: {
+        bookingId: dto.bookingId,
+        detail: dto.detail,
+        claimAmount: dto.claimAmount,
+      },
+    });
 
     // The other party to the booking — never the filer.
     const recipientId =
@@ -116,8 +108,6 @@ export class DisputesService {
   async updateStatus(id: string, dto: UpdateDisputeStatusDto) {
     const dispute = await this.findById(id);
 
-    // Money moves before the row changes: a Stripe failure must leave the
-    // dispute unresolved rather than marked resolved with the funds stuck.
     let depositStatus: 'released' | 'claimed' | 'partially_claimed' | undefined;
 
     if (dto.status === 'resolved' && dispute.claimAmount != null) {
@@ -126,28 +116,14 @@ export class DisputesService {
         throw new BadRequestException('Resolution exceeds the amount claimed');
       }
 
-      try {
-        if (!dispute.booking.depositIntentId) {
-          throw new Error('booking has no deposit intent to settle');
-        }
-        if (awarded.gt(0)) {
-          // Partial capture: Stripe releases the uncaptured remainder to the
-          // renter automatically, which is the partially_claimed semantic.
-          await this.payments.capture(dispute.booking.depositIntentId, awarded);
-          depositStatus = awarded.equals(dispute.booking.depositAmount)
-            ? 'claimed'
-            : 'partially_claimed';
-        } else {
-          // Ruling 8: silence means no damage awarded — the safe default for
-          // the party who isn't in the room.
-          await this.payments.release(dispute.booking.depositIntentId);
-          depositStatus = 'released';
-        }
-      } catch (err) {
-        throw new ConflictException('Deposit could not be claimed', {
-          cause: err,
-        });
-      }
+      // Settling a claim just records how the deposit was split — a full
+      // award releases nothing, a zero award ("silence means no damage" —
+      // Ruling 8) releases the whole deposit.
+      depositStatus = awarded.isZero()
+        ? 'released'
+        : awarded.equals(dispute.booking.depositAmount)
+          ? 'claimed'
+          : 'partially_claimed';
     } else if (
       dto.resolvedAmount !== undefined &&
       dispute.claimAmount == null
@@ -155,14 +131,7 @@ export class DisputesService {
       throw new BadRequestException('This dispute has no claim to resolve');
     }
 
-    // `payoutStatus: 'pending'` only applies when the booking isn't
-    // cancelled (a cancelled booking never pays out); `depositStatus` is
-    // written whenever this resolution settled a claim, regardless.
     const bookingWrite = {
-      ...(dto.status === 'resolved' &&
-        dispute.booking.status !== 'cancelled' && {
-          payoutStatus: 'pending' as const,
-        }),
       ...(depositStatus && { depositStatus }),
     };
 

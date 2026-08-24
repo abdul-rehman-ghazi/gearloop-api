@@ -34,8 +34,8 @@ export function calculateRefund(args: {
     now = new Date(),
   } = args;
 
-  // A pending hold was never captured — cancelling it releases the whole
-  // hold, not a "refund" in the Stripe sense, but the same 100% outcome.
+  // `pending` never charged anything — the owner hasn't accepted yet, so
+  // there's nothing to hold back.
   if (status === 'pending') {
     return total;
   }

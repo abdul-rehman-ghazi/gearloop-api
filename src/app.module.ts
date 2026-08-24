@@ -8,7 +8,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ListingsModule } from './listings/listings.module';
 import { BookingsModule } from './bookings/bookings.module';
-import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { MessagesModule } from './messages/messages.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -26,7 +25,6 @@ import { PricingModule } from './pricing/pricing.module';
     UsersModule,
     ListingsModule,
     BookingsModule,
-    PaymentMethodsModule,
     MessagesModule,
     DisputesModule,
     ReviewsModule,

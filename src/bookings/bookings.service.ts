@@ -10,8 +10,9 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { calculateBookingPricing } from './booking-pricing.util';
 import { calculateRefund } from './booking-cancellation.util';
+import { blockingBooking } from './booking-availability.util';
 import { NotificationsService } from '../notifications/notifications.service';
-import { PaymentsService } from '../payments/payments.service';
+import { chargeCurrency } from '../common/country-currency';
 import { Prisma } from '../../generated/prisma/client';
 import type {
   BookingStatus,
@@ -25,7 +26,6 @@ export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
-    private readonly payments: PaymentsService,
   ) {}
 
   async create(renterId: string, dto: CreateBookingDto) {
@@ -36,13 +36,6 @@ export class BookingsService {
       throw new NotFoundException('Listing not found');
     }
 
-    const paymentMethod = await this.prisma.paymentMethod.findUnique({
-      where: { id: dto.paymentMethodId },
-    });
-    if (!paymentMethod || paymentMethod.userId !== renterId) {
-      throw new NotFoundException('Payment method not found');
-    }
-
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end <= start) {
@@ -50,79 +43,24 @@ export class BookingsService {
     }
 
     // Application-level pre-check against confirmed bookings only, matching
-    // the scope of the future btree_gist EXCLUDE constraint (WHERE status =
-    // 'confirmed'). Two overlapping *pending* bookings can coexist until one
-    // is confirmed — that's intentional, not a bug.
-    await this.assertNoConfirmedOverlap(dto.listingId, start, end);
+    // the scope of the future btree_gist EXCLUDE constraint. Two overlapping
+    // *pending* bookings can coexist until one is accepted — that's
+    // intentional, not a bug.
+    await this.assertNoActiveOverlap(dto.listingId, start, end);
 
     const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000);
     const { subtotal, serviceFee, tax, total } = calculateBookingPricing(
       listing.pricePerDay,
       nights,
     );
-
-    // Ruling 5: no booking row exists without a successful auth-hold, the
-    // same way no booking row exists when the availability check fails.
-    let paymentIntentId: string;
-    try {
-      paymentIntentId = await this.payments.authorize(
-        paymentMethod.processorPaymentMethodId,
-        total,
-      );
-    } catch (err) {
-      // Stripe tags every error it raises with a `type` string;
-      // StripeCardError is the decline/insufficient-funds/SCA-refused family.
-      // Checking the string rather than `instanceof Stripe.errors.*` keeps
-      // this file free of a `stripe` import and works under jest.mock.
-      // Stripe's own message is deliberately not surfaced verbatim, to avoid
-      // leaking processor detail to the client.
-      if ((err as { type?: string })?.type === 'StripeCardError') {
-        throw new BadRequestException('Card was declined');
-      }
-      // Anything else (network, bad API key, Stripe outage) is not the
-      // renter's fault and is not translated — it surfaces as a 500.
-      throw err;
-    }
-
-    // Ruling 2: snapshot the listing's deposit onto the booking. `?? 0`
-    // covers listings written before this column existed.
     const depositAmount = new Prisma.Decimal(listing.depositAmount ?? 0);
-
-    // Ruling 3: the deposit is a SECOND hold, placed here rather than at
-    // confirm so there is one card interaction and one failure path. It is
-    // never captured on confirm — it stays authorized until the return.
-    //
-    // ponytail: a Stripe auth-hold lapses after roughly 7 days, so a deposit
-    // for a booking that starts three weeks out will have expired before the
-    // handover. Upgrade path when this bites: a scheduled job that
-    // re-authorizes before the start date, or `extended_authorization` on the
-    // card networks that support it. Both need a scheduler this codebase
-    // does not have yet.
-    let depositIntentId: string | null = null;
-    if (depositAmount.gt(0)) {
-      try {
-        depositIntentId = await this.payments.authorize(
-          paymentMethod.processorPaymentMethodId,
-          depositAmount,
-        );
-      } catch (err) {
-        // The rental hold succeeded moments ago and this booking is not
-        // going to exist. Release it or the renter is left with an orphaned
-        // hold. Best-effort: the original error is what the caller needs.
-        await this.payments.release(paymentIntentId).catch(() => {});
-        if ((err as { type?: string })?.type === 'StripeCardError') {
-          throw new BadRequestException('Card was declined');
-        }
-        throw err;
-      }
-    }
+    const currency = chargeCurrency(listing.country);
 
     try {
       const booking = await this.prisma.booking.create({
         data: {
           listingId: dto.listingId,
           renterId,
-          paymentMethodId: dto.paymentMethodId,
           pickupMethod: dto.pickupMethod,
           startDate: start,
           endDate: end,
@@ -132,10 +70,8 @@ export class BookingsService {
           serviceFee,
           tax,
           total,
-          paymentIntentId,
+          currency,
           depositAmount,
-          depositIntentId,
-          depositStatus: depositIntentId ? 'held' : null,
         },
         include: { renter: { select: RENTER_SELECT } },
       });
@@ -157,17 +93,6 @@ export class BookingsService {
       // (exclusion_violation) for the loser of that race — Prisma has no
       // dedicated typed error code for it, so we check defensively across
       // the shapes different Prisma versions surface it in.
-
-      // The booking row never got written — release the hold we just placed
-      // so the renter's card isn't held against a booking that doesn't exist.
-      // Best-effort: if the release itself fails, we still need to report the
-      // original error to the caller, not this cleanup failure. Same for the
-      // deposit hold, if one was placed.
-      await this.payments.release(paymentIntentId).catch(() => {});
-      if (depositIntentId) {
-        await this.payments.release(depositIntentId).catch(() => {});
-      }
-
       if (this.isExclusionViolation(err)) {
         throw new ConflictException(
           'Listing is not available for the selected dates',
@@ -255,7 +180,7 @@ export class BookingsService {
 
     // A completed or already-cancelled booking has no further transition —
     // without this, re-cancelling a cancelled row (or cancelling a
-    // completed one) would release/refund a PaymentIntent a second time.
+    // completed one) would refund/release money a second time.
     if (
       dto.status === 'cancelled' &&
       (existing.status === 'completed' || existing.status === 'cancelled')
@@ -266,28 +191,40 @@ export class BookingsService {
     }
 
     if (dto.status === 'confirmed') {
-      const booking = await this.prisma.booking.findUniqueOrThrow({
-        where: { id },
-      });
-      await this.assertNoConfirmedOverlap(
-        booking.listingId,
-        booking.startDate,
-        booking.endDate,
+      if (existing.listing.ownerId !== userId) {
+        throw new ForbiddenException('Only the owner can accept a booking');
+      }
+      if (existing.status !== 'pending') {
+        throw new ConflictException(
+          `Cannot accept a booking that is ${existing.status}`,
+        );
+      }
+      await this.assertNoActiveOverlap(
+        existing.listingId,
+        existing.startDate,
+        existing.endDate,
         id,
       );
 
-      // Ruling 5: the capture must succeed before the row moves to
-      // confirmed. A throw here means no status update and no notification.
-      try {
-        if (!existing.paymentIntentId) {
-          throw new Error('booking has no payment intent to capture');
-        }
-        await this.payments.capture(existing.paymentIntentId);
-      } catch (err) {
-        throw new ConflictException('Payment could not be captured', {
-          cause: err,
-        });
-      }
+      const updated = await this.prisma.booking.update({
+        where: { id },
+        data: {
+          status: 'confirmed',
+          ...(existing.depositAmount.gt(0) && {
+            depositStatus: 'held' as const,
+          }),
+        },
+      });
+
+      await this.notifications.notify(
+        existing.renterId,
+        'booking_confirmed',
+        `Your booking for ${existing.listing.title} is confirmed`,
+        `${existing.listing.title} has been accepted. Booking ${existing.requestNumber} is confirmed.`,
+        `/bookings/${id}`,
+      );
+
+      return updated;
     }
 
     const cancelledBy =
@@ -308,65 +245,19 @@ export class BookingsService {
           })
         : undefined;
 
-    if (dto.status === 'cancelled') {
-      // release() figures out cancel-vs-refund from the intent's own status.
-      // A zero-refund tier leaves the already-captured funds untouched —
-      // no Stripe call at all.
-      try {
-        if (!existing.paymentIntentId) {
-          throw new Error('booking has no payment intent to release');
-        }
-        if (!refundAmount!.isZero()) {
-          if (refundAmount!.equals(existing.total)) {
-            await this.payments.release(existing.paymentIntentId);
-          } else {
-            await this.payments.release(existing.paymentIntentId, refundAmount);
-          }
-        }
-      } catch (err) {
-        throw new ConflictException('Payment could not be released', {
-          cause: err,
-        });
-      }
-    }
-
     // Ruling 7: "clean return" == completed with no dispute on the booking.
-    // A cancellation always releases. Anything else leaves the hold alone.
+    // A cancellation always releases. Anything else leaves the deposit
+    // alone.
     const releasesDeposit =
       existing.depositStatus === 'held' &&
       (dto.status === 'cancelled' ||
         (dto.status === 'completed' && !existing.dispute));
-
-    if (releasesDeposit) {
-      try {
-        if (!existing.depositIntentId) {
-          throw new Error('booking has no deposit intent to release');
-        }
-        await this.payments.release(existing.depositIntentId);
-      } catch (err) {
-        throw new ConflictException('Deposit could not be released', {
-          cause: err,
-        });
-      }
-    }
-
-    // `paid` is never written here: the capture above moves funds into the
-    // platform's Stripe balance, so `pending` truthfully means "captured,
-    // awaiting a payout job". The payout job itself is out of scope
-    // (Ruling 2) and is what will eventually write `paid`.
-    const payoutStatus =
-      dto.status === 'confirmed'
-        ? 'pending'
-        : dto.status === 'cancelled'
-          ? null
-          : undefined;
 
     try {
       const updated = await this.prisma.booking.update({
         where: { id },
         data: {
           status: dto.status,
-          ...(payoutStatus !== undefined && { payoutStatus }),
           ...(releasesDeposit && { depositStatus: 'released' as const }),
           ...(dto.status === 'cancelled' && {
             cancelledAt: new Date(),
@@ -377,16 +268,6 @@ export class BookingsService {
         },
       });
 
-      if (dto.status === 'confirmed') {
-        await this.notifications.notify(
-          existing.renterId,
-          'booking_confirmed',
-          `Your booking for ${existing.listing.title} is confirmed`,
-          `Booking ${existing.requestNumber} is confirmed.`,
-          `/bookings/${id}`,
-        );
-      }
-
       if (dto.status === 'cancelled') {
         // Notify whichever party didn't cancel — a renter cancelling
         // otherwise never tells the owner their gear is free again.
@@ -395,8 +276,8 @@ export class BookingsService {
             ? existing.listing.ownerId
             : existing.renterId;
         const refundNote =
-          cancelledBy === 'owner'
-            ? ` You'll be refunded $${refundAmount!.toString()}.`
+          cancelledBy === 'owner' && !refundAmount!.isZero()
+            ? ` You'll be refunded ${existing.currency} ${refundAmount!.toString()}.`
             : '';
         await this.notifications.notify(
           recipientId,
@@ -412,7 +293,7 @@ export class BookingsService {
           existing.renterId,
           'deposit_released',
           `Your security deposit for ${existing.listing.title} was released`,
-          `The hold on your card for booking ${existing.requestNumber} has been released.`,
+          `Your deposit for booking ${existing.requestNumber} has been refunded.`,
           `/bookings/${id}`,
         );
       }
@@ -428,7 +309,7 @@ export class BookingsService {
     }
   }
 
-  private async assertNoConfirmedOverlap(
+  private async assertNoActiveOverlap(
     listingId: string,
     start: Date,
     end: Date,
@@ -437,8 +318,8 @@ export class BookingsService {
     const conflict = await this.prisma.booking.findFirst({
       where: {
         listingId,
-        status: 'confirmed',
         deletedAt: null,
+        ...blockingBooking(),
         startDate: { lt: end },
         endDate: { gt: start },
         ...(excludeBookingId && { id: { not: excludeBookingId } }),

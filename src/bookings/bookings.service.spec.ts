@@ -1,25 +1,16 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { PaymentsService } from '../payments/payments.service';
 
 function makePrisma() {
   return {
     listing: {
       findUnique: jest.fn(),
     },
-    paymentMethod: {
-      findUnique: jest.fn(),
-    },
     booking: {
       findUnique: jest.fn(),
-      findUniqueOrThrow: jest.fn(),
       findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
@@ -36,43 +27,43 @@ function makeNotifications() {
   } as unknown as NotificationsService;
 }
 
-function makePayments() {
-  return {
-    authorize: jest.fn().mockResolvedValue('pi_test_1'),
-    capture: jest.fn().mockResolvedValue(undefined),
-    release: jest.fn().mockResolvedValue(undefined),
-  } as unknown as PaymentsService;
-}
+describe('BookingsService.create', () => {
+  const listing = {
+    id: 'l1',
+    title: 'Canon R5',
+    ownerId: 'owner-1',
+    pricePerDay: 100,
+    country: 'ZA',
+    depositAmount: new Prisma.Decimal(0),
+    deletedAt: null,
+  };
+  const dto = {
+    listingId: 'l1',
+    pickupMethod: 'pickup' as const,
+    startDate: '2026-09-01',
+    endDate: '2026-09-03',
+  };
 
-describe('BookingsService.create notifications', () => {
-  it('notifies the listing owner of a new booking request', async () => {
+  it('creates a pending booking and notifies the owner', async () => {
     const prisma = makePrisma();
     const notifications = makeNotifications();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
-      id: 'l1',
-      title: 'Canon R5',
-      ownerId: 'owner-1',
-      pricePerDay: 100,
-      deletedAt: null,
-    });
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue({
-      id: 'pm1',
-      userId: 'renter-1',
-    });
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
     (prisma.booking.create as jest.Mock).mockResolvedValue({
       id: 'b1',
       requestNumber: 'GL-1',
     });
 
-    const service = new BookingsService(prisma, notifications, makePayments());
-    await service.create('renter-1', {
-      listingId: 'l1',
-      paymentMethodId: 'pm1',
-      pickupMethod: 'pickup',
-      startDate: '2026-09-01',
-      endDate: '2026-09-03',
-    });
+    const service = new BookingsService(prisma, notifications);
+    await service.create('renter-1', dto);
 
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currency: 'ZAR',
+          depositAmount: expect.anything(),
+        }),
+      }),
+    );
     expect(notifications.notify).toHaveBeenCalledWith(
       'owner-1',
       'booking_requested',
@@ -81,817 +72,162 @@ describe('BookingsService.create notifications', () => {
       '/bookings/b1',
     );
   });
+
+  it('snapshots pricing and currency', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      country: 'GB',
+      depositAmount: new Prisma.Decimal(50),
+    });
+    (prisma.booking.create as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      requestNumber: 'GL-1',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.create('renter-1', dto);
+
+    const [{ data }] = (prisma.booking.create as jest.Mock).mock
+      .calls[0] as unknown as [
+      {
+        data: {
+          total: Prisma.Decimal;
+          currency: string;
+          depositAmount: Prisma.Decimal;
+        };
+      },
+    ];
+    // 2 nights at 100 => subtotal 200, fee 20, tax 17.60, total 237.60
+    expect(data.total.toString()).toBe('237.6');
+    expect(data.currency).toBe('GBP');
+    expect(data.depositAmount.toString()).toBe('50');
+  });
+
+  it('rejects a new booking that overlaps a blackout', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.blackout.findFirst as jest.Mock).mockResolvedValue({
+      id: 'bo1',
+      listingId: 'l1',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      'Listing is not available for the selected dates',
+    );
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an overlap against a confirmed booking', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.booking.findFirst as jest.Mock).mockResolvedValue({
+      id: 'other',
+      status: 'confirmed',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      ConflictException,
+    );
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
 });
 
-describe('BookingsService.updateStatus notifications', () => {
+describe('BookingsService.updateStatus: pending -> confirmed', () => {
   const pendingBooking = {
     id: 'b1',
     requestNumber: 'GL-1',
     listingId: 'l1',
     renterId: 'renter-1',
     status: 'pending',
-    paymentIntentId: 'pi_test_1',
+    depositStatus: null,
+    depositAmount: new Prisma.Decimal(0),
     total: new Prisma.Decimal(150),
+    currency: 'ZAR',
     startDate: new Date('2026-09-01'),
     endDate: new Date('2026-09-03'),
-    listing: {
-      id: 'l1',
-      title: 'Canon R5',
-      ownerId: 'owner-1',
-      cancellationPolicy: 'moderate',
-    },
-  };
-
-  it('notifies the renter when the booking is confirmed', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
-    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(
-      pendingBooking,
-    );
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'confirmed',
-    });
-
-    const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', 'renter-1', { status: 'confirmed' });
-
-    expect(notifications.notify).toHaveBeenCalledWith(
-      'renter-1',
-      'booking_confirmed',
-      'Your booking for Canon R5 is confirmed',
-      'Booking GL-1 is confirmed.',
-      '/bookings/b1',
-    );
-  });
-
-  it('notifies the owner when the renter cancels', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'cancelled',
-    });
-
-    const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
-
-    expect(notifications.notify).toHaveBeenCalledWith(
-      'owner-1',
-      'booking_cancelled',
-      'Your booking for Canon R5 was cancelled',
-      'Booking GL-1 was cancelled.',
-      '/bookings/b1',
-    );
-  });
-
-  it('notifies the renter with the refund amount when the owner cancels', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'cancelled',
-    });
-
-    const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', 'owner-1', { status: 'cancelled' });
-
-    expect(notifications.notify).toHaveBeenCalledWith(
-      'renter-1',
-      'booking_cancelled',
-      'Your booking for Canon R5 was cancelled',
-      "Booking GL-1 was cancelled. You'll be refunded $150.",
-      '/bookings/b1',
-    );
-  });
-
-  it('does not notify for a completed booking', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(pendingBooking);
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'completed',
-    });
-
-    const service = new BookingsService(prisma, notifications, makePayments());
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
-
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-});
-
-describe('BookingsService.create payments', () => {
-  const listing = {
-    id: 'l1',
-    title: 'Canon R5',
-    ownerId: 'owner-1',
-    pricePerDay: 100,
-    deletedAt: null,
-  };
-  const paymentMethod = {
-    id: 'pm1',
-    userId: 'renter-1',
-    processorPaymentMethodId: 'pm_card_visa',
-  };
-  const dto = {
-    listingId: 'l1',
-    paymentMethodId: 'pm1',
-    pickupMethod: 'pickup' as const,
-    startDate: '2026-09-01',
-    endDate: '2026-09-03',
-  };
-
-  it('authorizes the card for the booking total and stores the intent id', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (payments.authorize as jest.Mock).mockResolvedValue('pi_created');
-    (prisma.booking.create as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      requestNumber: 'GL-1',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.create('renter-1', dto);
-
-    // 2 nights at 100 => subtotal 200, fee 20, tax 17.60, total 237.60
-    expect(payments.authorize).toHaveBeenCalledTimes(1);
-    const [processorId, amount] = (payments.authorize as jest.Mock).mock
-      .calls[0] as [string, Prisma.Decimal];
-    expect(processorId).toBe('pm_card_visa');
-    expect(amount.toString()).toBe('237.6');
-
-    expect(prisma.booking.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ paymentIntentId: 'pi_created' }),
-      }),
-    );
-  });
-
-  it('authorizes before writing the booking row', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (prisma.booking.create as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      requestNumber: 'GL-1',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.create('renter-1', dto);
-
-    expect(
-      (payments.authorize as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      (prisma.booking.create as jest.Mock).mock.invocationCallOrder[0],
-    );
-  });
-
-  it('translates a card decline into BadRequestException and writes nothing', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (payments.authorize as jest.Mock).mockRejectedValue(
-      Object.assign(new Error('Your card was declined.'), {
-        type: 'StripeCardError',
-        code: 'card_declined',
-      }),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      BadRequestException,
-    );
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'Card was declined',
-    );
-
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('lets a non-card Stripe failure propagate untranslated', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (payments.authorize as jest.Mock).mockRejectedValue(
-      Object.assign(new Error('Invalid API Key provided'), {
-        type: 'StripeAuthenticationError',
-      }),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'Invalid API Key provided',
-    );
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-  });
-
-  it('releases the hold when the booking row fails to write', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (payments.authorize as jest.Mock).mockResolvedValue('pi_orphaned');
-    (prisma.booking.create as jest.Mock).mockRejectedValue(
-      new Error('database is down'),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'database is down',
-    );
-
-    expect(payments.release).toHaveBeenCalledWith('pi_orphaned');
-  });
-});
-
-describe('BookingsService.updateStatus payments', () => {
-  const heldBooking = {
-    id: 'b1',
-    requestNumber: 'GL-1',
-    listingId: 'l1',
-    renterId: 'renter-1',
-    status: 'confirmed',
-    paymentIntentId: 'pi_test_1',
-    total: new Prisma.Decimal(150),
-    startDate: new Date('2026-09-01'),
-    endDate: new Date('2026-09-03'),
-    listing: {
-      id: 'l1',
-      title: 'Canon R5',
-      ownerId: 'owner-1',
-      cancellationPolicy: 'moderate',
-    },
-  };
-
-  function arrange() {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(heldBooking);
-    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(
-      heldBooking,
-    );
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'confirmed',
-    });
-    return { prisma, notifications, payments };
-  }
-
-  it('captures the hold when confirming, before updating the row', async () => {
-    const { prisma, notifications, payments } = arrange();
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'renter-1', { status: 'confirmed' });
-
-    expect(payments.capture).toHaveBeenCalledWith('pi_test_1');
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(
-      (payments.capture as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      (prisma.booking.update as jest.Mock).mock.invocationCallOrder[0],
-    );
-  });
-
-  it('blocks the confirm transition when the capture fails', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (payments.capture as jest.Mock).mockRejectedValue(
-      new Error('intent expired'),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
-    ).rejects.toThrow(ConflictException);
-
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('reports a capture failure as "Payment could not be captured"', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (payments.capture as jest.Mock).mockRejectedValue(
-      new Error('intent expired'),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
-    ).rejects.toThrow('Payment could not be captured');
-  });
-
-  it('releases the hold when cancelling, before updating the row', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'cancelled',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
-
-    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
-    expect(payments.capture).not.toHaveBeenCalled();
-    expect(
-      (payments.release as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      (prisma.booking.update as jest.Mock).mock.invocationCallOrder[0],
-    );
-  });
-
-  it('blocks the cancel transition when the release fails', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (payments.release as jest.Mock).mockRejectedValue(
-      new Error('refund failed'),
-    );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
-    ).rejects.toThrow('Payment could not be released');
-
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('blocks the transition when the booking has no payment intent', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
-      ...heldBooking,
-      paymentIntentId: null,
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
-    ).rejects.toThrow('Payment could not be captured');
-
-    expect(payments.capture).not.toHaveBeenCalled();
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-  });
-
-  it('touches no payment call when completing a booking', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'completed',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
-
-    expect(payments.capture).not.toHaveBeenCalled();
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(prisma.booking.update).toHaveBeenCalled();
-  });
-});
-
-describe('BookingsService.updateStatus authorization', () => {
-  const booking = {
-    id: 'b1',
-    requestNumber: 'GL-1',
-    listingId: 'l1',
-    renterId: 'renter-1',
-    paymentIntentId: 'pi_test_1',
-    startDate: new Date('2026-09-01'),
-    endDate: new Date('2026-09-03'),
-    listing: { id: 'l1', title: 'Canon R5', ownerId: 'owner-1' },
-  };
-
-  it('forbids a caller who is neither the renter nor the listing owner', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'stranger-1', { status: 'cancelled' }),
-    ).rejects.toThrow(ForbiddenException);
-
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('allows the listing owner to update status, not just the renter', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
-    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(booking);
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'confirmed',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'owner-1', { status: 'confirmed' }),
-    ).resolves.toEqual({ id: 'b1', status: 'confirmed' });
-  });
-});
-
-describe('BookingsService.create deposit hold', () => {
-  const paymentMethod = {
-    id: 'pm1',
-    userId: 'renter-1',
-    processorPaymentMethodId: 'pm_card_visa',
-  };
-  const dto = {
-    listingId: 'l1',
-    paymentMethodId: 'pm1',
-    pickupMethod: 'pickup' as const,
-    startDate: '2026-09-01',
-    endDate: '2026-09-03',
-  };
-
-  function arrange(depositAmount: number) {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
-      id: 'l1',
-      title: 'Canon R5',
-      ownerId: 'owner-1',
-      pricePerDay: 100,
-      depositAmount: new Prisma.Decimal(depositAmount),
-      deletedAt: null,
-    });
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (prisma.booking.create as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      requestNumber: 'GL-1',
-    });
-    return { prisma, notifications, payments };
-  }
-
-  it('places a second hold for the deposit and records it on the booking', async () => {
-    const { prisma, notifications, payments } = arrange(200);
-    (payments.authorize as jest.Mock)
-      .mockResolvedValueOnce('pi_rental')
-      .mockResolvedValueOnce('pi_deposit');
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.create('renter-1', dto);
-
-    expect(payments.authorize).toHaveBeenCalledTimes(2);
-    const [, depositArg] = (payments.authorize as jest.Mock).mock.calls[1] as [
-      string,
-      Prisma.Decimal,
-    ];
-    expect(depositArg.toString()).toBe('200');
-
-    expect(prisma.booking.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          paymentIntentId: 'pi_rental',
-          depositIntentId: 'pi_deposit',
-          depositStatus: 'held',
-        }),
-      }),
-    );
-  });
-
-  it('snapshots the deposit amount onto the booking without touching the total', async () => {
-    const { prisma, notifications, payments } = arrange(200);
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.create('renter-1', dto);
-
-    const calls = (prisma.booking.create as jest.Mock).mock
-      .calls as unknown as Array<
-      [{ data: { depositAmount: Prisma.Decimal; total: Prisma.Decimal } }]
-    >;
-    const { data } = calls[0][0];
-    expect(data.depositAmount.toString()).toBe('200');
-    // 2 nights at 100 => subtotal 200, fee 20, tax 17.60, total 237.60 —
-    // unchanged by the deposit (Ruling 1).
-    expect(data.total.toString()).toBe('237.6');
-  });
-
-  it('places no deposit hold when the listing has no deposit', async () => {
-    const { prisma, notifications, payments } = arrange(0);
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.create('renter-1', dto);
-
-    expect(payments.authorize).toHaveBeenCalledTimes(1);
-    expect(prisma.booking.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          depositIntentId: null,
-          depositStatus: null,
-        }),
-      }),
-    );
-  });
-
-  it('releases the rental hold and writes nothing when the deposit hold declines', async () => {
-    const { prisma, notifications, payments } = arrange(200);
-    (payments.authorize as jest.Mock)
-      .mockResolvedValueOnce('pi_rental')
-      .mockRejectedValueOnce(
-        Object.assign(new Error('Your card was declined.'), {
-          type: 'StripeCardError',
-          code: 'card_declined',
-        }),
-      );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      BadRequestException,
-    );
-
-    expect(payments.release).toHaveBeenCalledWith('pi_rental');
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('reports a declined deposit hold as a card decline', async () => {
-    const { prisma, notifications, payments } = arrange(200);
-    (payments.authorize as jest.Mock)
-      .mockResolvedValueOnce('pi_rental')
-      .mockRejectedValueOnce(
-        Object.assign(new Error('Your card was declined.'), {
-          type: 'StripeCardError',
-        }),
-      );
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'Card was declined',
-    );
-  });
-
-  it('still releases the rental hold when a non-card error fails the deposit', async () => {
-    const { prisma, notifications, payments } = arrange(200);
-    (payments.authorize as jest.Mock)
-      .mockResolvedValueOnce('pi_rental')
-      .mockRejectedValueOnce(new Error('Stripe is down'));
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'Stripe is down',
-    );
-
-    expect(payments.release).toHaveBeenCalledWith('pi_rental');
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-  });
-});
-
-describe('BookingsService.updateStatus deposit release', () => {
-  const heldBooking = {
-    id: 'b1',
-    requestNumber: 'GL-1',
-    listingId: 'l1',
-    renterId: 'renter-1',
-    status: 'confirmed',
-    paymentIntentId: 'pi_rental',
-    depositIntentId: 'pi_deposit',
-    depositStatus: 'held',
-    total: new Prisma.Decimal(150),
-    startDate: new Date('2026-09-01'),
-    endDate: new Date('2026-09-03'),
-    listing: {
-      id: 'l1',
-      title: 'Canon R5',
-      ownerId: 'owner-1',
-      cancellationPolicy: 'moderate',
-    },
     dispute: null,
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
   };
 
   function arrange(overrides: Record<string, unknown> = {}) {
     const prisma = makePrisma();
     const notifications = makeNotifications();
-    const payments = makePayments();
-    const booking = { ...heldBooking, ...overrides };
+    const booking = { ...pendingBooking, ...overrides };
     (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
-    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue(booking);
     (prisma.booking.update as jest.Mock).mockResolvedValue({
       id: 'b1',
-      status: 'completed',
+      status: 'confirmed',
     });
-    return { prisma, notifications, payments };
+    return { prisma, notifications };
   }
 
-  it('releases the deposit when the owner completes a booking with no dispute', async () => {
-    const { prisma, notifications, payments } = arrange();
+  it('lets the owner accept a pending booking, confirming it directly', async () => {
+    const { prisma, notifications } = arrange();
 
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'confirmed' });
 
-    expect(payments.release).toHaveBeenCalledWith('pi_deposit');
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ depositStatus: 'released' }),
+        data: expect.objectContaining({ status: 'confirmed' }),
       }),
     );
-  });
-
-  it('notifies the renter that the deposit was released', async () => {
-    const { prisma, notifications, payments } = arrange();
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
-
     expect(notifications.notify).toHaveBeenCalledWith(
       'renter-1',
-      'deposit_released',
-      'Your security deposit for Canon R5 was released',
-      'The hold on your card for booking GL-1 has been released.',
+      'booking_confirmed',
+      expect.any(String),
+      expect.any(String),
       '/bookings/b1',
     );
   });
 
-  it('releases money before writing the row', async () => {
-    const { prisma, notifications, payments } = arrange();
+  it('holds the deposit when accepting a booking with a deposit', async () => {
+    const { prisma, notifications } = arrange({
+      depositAmount: new Prisma.Decimal(75),
+    });
 
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'confirmed' });
 
-    expect(
-      (payments.release as jest.Mock).mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      (prisma.booking.update as jest.Mock).mock.invocationCallOrder[0],
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ depositStatus: 'held' }),
+      }),
     );
   });
 
-  it('keeps the deposit held when the booking has a dispute', async () => {
-    const { prisma, notifications, payments } = arrange({
-      dispute: { id: 'd1', status: 'flagged' },
-    });
+  it('refuses the renter accepting their own booking', async () => {
+    const { prisma, notifications } = arrange();
 
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
-
-    expect(payments.release).not.toHaveBeenCalled();
-    const calls = (prisma.booking.update as jest.Mock).mock
-      .calls as unknown as Array<[{ data: { depositStatus?: string } }]>;
-    const { data } = calls[0][0];
-    expect(data.depositStatus).toBeUndefined();
-  });
-
-  it('refuses to let the renter complete a booking', async () => {
-    const { prisma, notifications, payments } = arrange();
-
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
     await expect(
-      service.updateStatus('b1', 'renter-1', { status: 'completed' }),
-    ).rejects.toThrow('Only the owner can complete a booking');
-
-    expect(payments.release).not.toHaveBeenCalled();
+      service.updateStatus('b1', 'renter-1', { status: 'confirmed' }),
+    ).rejects.toThrow(ForbiddenException);
     expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
-  it('releases the deposit alongside the rental hold on cancellation', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (prisma.booking.update as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      status: 'cancelled',
-    });
+  it('rejects accepting a booking that already moved past pending', async () => {
+    const { prisma, notifications } = arrange({ status: 'confirmed' });
 
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
-
-    expect(payments.release).toHaveBeenCalledWith('pi_rental');
-    expect(payments.release).toHaveBeenCalledWith('pi_deposit');
-  });
-
-  it('blocks the transition when the deposit release fails', async () => {
-    const { prisma, notifications, payments } = arrange();
-    (payments.release as jest.Mock).mockRejectedValue(new Error('Stripe down'));
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(
-      service.updateStatus('b1', 'owner-1', { status: 'completed' }),
-    ).rejects.toThrow('Deposit could not be released');
-
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-  });
-
-  it('does nothing deposit-related for a zero-deposit booking', async () => {
-    const { prisma, notifications, payments } = arrange({
-      depositIntentId: null,
-      depositStatus: null,
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
-
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(notifications.notify).not.toHaveBeenCalled();
-    expect(prisma.booking.update).toHaveBeenCalled();
-  });
-});
-
-describe('BookingsService availability blackouts', () => {
-  const listing = {
-    id: 'l1',
-    title: 'Canon R5',
-    ownerId: 'owner-1',
-    pricePerDay: 100,
-    deletedAt: null,
-  };
-  const paymentMethod = {
-    id: 'pm1',
-    userId: 'renter-1',
-    processorPaymentMethodId: 'pm_card_visa',
-  };
-  const dto = {
-    listingId: 'l1',
-    paymentMethodId: 'pm1',
-    pickupMethod: 'pickup' as const,
-    startDate: '2026-09-01',
-    endDate: '2026-09-03',
-  };
-
-  it('rejects a new booking that overlaps a blackout', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
-    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
-      paymentMethod,
-    );
-    (prisma.blackout.findFirst as jest.Mock).mockResolvedValue({
-      id: 'bo1',
-      listingId: 'l1',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await expect(service.create('renter-1', dto)).rejects.toThrow(
-      'Listing is not available for the selected dates',
-    );
-
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-    expect(payments.authorize).not.toHaveBeenCalled();
-  });
-
-  it('rejects confirming a pending booking whose dates were later blacked out', async () => {
-    const prisma = makePrisma();
-    const notifications = makeNotifications();
-    const payments = makePayments();
-    (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      renterId: 'renter-1',
-      paymentIntentId: 'pi_1',
-      listing: { id: 'l1', ownerId: 'owner-1', title: 'Canon R5' },
-      dispute: null,
-    });
-    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue({
-      id: 'b1',
-      listingId: 'l1',
-      startDate: new Date('2026-09-01'),
-      endDate: new Date('2026-09-03'),
-    });
-    (prisma.blackout.findFirst as jest.Mock).mockResolvedValue({
-      id: 'bo1',
-      listingId: 'l1',
-    });
-
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
     await expect(
       service.updateStatus('b1', 'owner-1', { status: 'confirmed' }),
-    ).rejects.toThrow('Listing is not available for the selected dates');
-
-    expect(payments.capture).not.toHaveBeenCalled();
-    expect(prisma.booking.update).not.toHaveBeenCalled();
+    ).rejects.toThrow(ConflictException);
   });
 });
 
-describe('BookingsService.updateStatus cancellation refund tiers', () => {
-  // "now" for these tests is whatever the real clock is; startDate is set
-  // relative to it via hoursFromNow so the tests aren't tied to a fixed date.
+describe('BookingsService.updateStatus cancellation refunds', () => {
   function hoursFromNow(hours: number): Date {
     return new Date(Date.now() + hours * 60 * 60 * 1000);
   }
@@ -903,11 +239,11 @@ describe('BookingsService.updateStatus cancellation refund tiers', () => {
       listingId: 'l1',
       renterId: 'renter-1',
       status: 'confirmed',
-      paymentIntentId: 'pi_test_1',
-      depositIntentId: null,
       depositStatus: null,
+      depositAmount: new Prisma.Decimal(0),
+      currency: 'ZAR',
       total: new Prisma.Decimal(200),
-      startDate: hoursFromNow(200), // well beyond any tier's cutoff
+      startDate: hoursFromNow(200),
       endDate: new Date(Date.now() + 210 * 60 * 60 * 1000),
       dispute: null,
       listing: {
@@ -923,7 +259,6 @@ describe('BookingsService.updateStatus cancellation refund tiers', () => {
   function arrange(booking: ReturnType<typeof confirmedBooking>) {
     const prisma = makePrisma();
     const notifications = makeNotifications();
-    const payments = makePayments();
     (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
     (prisma.booking.update as jest.Mock).mockImplementation(
       (args: { data: Record<string, unknown> }) => ({
@@ -932,10 +267,10 @@ describe('BookingsService.updateStatus cancellation refund tiers', () => {
         ...args.data,
       }),
     );
-    return { prisma, notifications, payments };
+    return { prisma, notifications };
   }
 
-  it('renter cancelling within a moderate-policy cutoff triggers a 50% partial refund', async () => {
+  it('snapshots the tiered refund amount on the cancelled row', async () => {
     const booking = confirmedBooking({
       listing: {
         id: 'l1',
@@ -945,84 +280,36 @@ describe('BookingsService.updateStatus cancellation refund tiers', () => {
       },
       startDate: hoursFromNow(2), // inside moderate's 120h cutoff -> 50%
     });
-    const { prisma, notifications, payments } = arrange(booking);
+    const { prisma, notifications } = arrange(booking);
 
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
-
-    expect(payments.release).toHaveBeenCalledWith(
-      'pi_test_1',
-      expect.objectContaining({ toString: expect.any(Function) }),
-    );
-    const [, amount] = (payments.release as jest.Mock).mock.calls[0] as [
-      string,
-      Prisma.Decimal,
-    ];
-    expect(amount.toString()).toBe('100');
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'cancelled',
-          cancelledBy: 'renter',
-        }),
-      }),
-    );
-  });
-
-  it('cancelling a pending booking always fully releases the hold, regardless of policy', async () => {
-    const booking = confirmedBooking({ status: 'pending' });
-    const { prisma, notifications, payments } = arrange(booking);
-
-    const service = new BookingsService(prisma, notifications, payments);
-    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
-
-    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
-  });
-
-  it('does not call Stripe when the refund tier is 0%', async () => {
-    const booking = confirmedBooking({
-      listing: {
-        id: 'l1',
-        title: 'Canon R5',
-        ownerId: 'owner-1',
-        cancellationPolicy: 'flexible',
-      },
-      startDate: hoursFromNow(1), // inside flexible's 24h cutoff -> 0% refund
-    });
-    const { prisma, notifications, payments } = arrange(booking);
-
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
     const updated = await service.updateStatus('b1', 'renter-1', {
       status: 'cancelled',
     });
 
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(updated.status).toBe('cancelled');
+    expect((updated as { refundAmount: Prisma.Decimal }).refundAmount.toString()).toBe(
+      '100',
+    );
   });
 
   it('rejects cancelling a booking that is already completed', async () => {
     const booking = confirmedBooking({ status: 'completed' });
-    const { prisma, notifications, payments } = arrange(booking);
+    const { prisma, notifications } = arrange(booking);
 
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
     await expect(
       service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
     ).rejects.toThrow(ConflictException);
-
-    expect(payments.release).not.toHaveBeenCalled();
-    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
   it('rejects cancelling a booking that is already cancelled', async () => {
     const booking = confirmedBooking({ status: 'cancelled' });
-    const { prisma, notifications, payments } = arrange(booking);
+    const { prisma, notifications } = arrange(booking);
 
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
     await expect(
       service.updateStatus('b1', 'renter-1', { status: 'cancelled' }),
     ).rejects.toThrow(ConflictException);
-
-    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
   it('an owner cancelling always fully refunds, even inside the cutoff', async () => {
@@ -1035,16 +322,213 @@ describe('BookingsService.updateStatus cancellation refund tiers', () => {
       },
       startDate: hoursFromNow(1),
     });
-    const { prisma, notifications, payments } = arrange(booking);
+    const { prisma, notifications } = arrange(booking);
 
-    const service = new BookingsService(prisma, notifications, payments);
+    const service = new BookingsService(prisma, notifications);
+    const updated = await service.updateStatus('b1', 'owner-1', {
+      status: 'cancelled',
+    });
+
+    expect((updated as { refundAmount: Prisma.Decimal }).refundAmount.toString()).toBe(
+      '200',
+    );
+  });
+
+  it('includes the currency in the refund notification to the renter', async () => {
+    const booking = confirmedBooking({
+      currency: 'GBP',
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'strict',
+      },
+      startDate: hoursFromNow(1),
+    });
+    const { prisma, notifications } = arrange(booking);
+
+    const service = new BookingsService(prisma, notifications);
     await service.updateStatus('b1', 'owner-1', { status: 'cancelled' });
 
-    expect(payments.release).toHaveBeenCalledWith('pi_test_1');
+    expect(notifications.notify).toHaveBeenCalledWith(
+      'renter-1',
+      'booking_cancelled',
+      expect.any(String),
+      expect.stringContaining("You'll be refunded GBP 200."),
+      '/bookings/b1',
+    );
+  });
+});
+
+describe('BookingsService.updateStatus deposit release', () => {
+  const heldBooking = {
+    id: 'b1',
+    requestNumber: 'GL-1',
+    listingId: 'l1',
+    renterId: 'renter-1',
+    status: 'confirmed',
+    depositStatus: 'held',
+    depositAmount: new Prisma.Decimal(75),
+    currency: 'ZAR',
+    total: new Prisma.Decimal(150),
+    startDate: new Date('2026-09-01'),
+    endDate: new Date('2026-09-03'),
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
+    dispute: null,
+  };
+
+  function arrange(overrides: Record<string, unknown> = {}) {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const booking = { ...heldBooking, ...overrides };
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'completed',
+    });
+    return { prisma, notifications };
+  }
+
+  it('releases the deposit when the owner completes a booking with no dispute', async () => {
+    const { prisma, notifications } = arrange();
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ cancelledBy: 'owner' }),
+        data: expect.objectContaining({ depositStatus: 'released' }),
       }),
     );
+  });
+
+  it('notifies the renter that the deposit was released', async () => {
+    const { prisma, notifications } = arrange();
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+
+    expect(notifications.notify).toHaveBeenCalledWith(
+      'renter-1',
+      'deposit_released',
+      'Your security deposit for Canon R5 was released',
+      expect.any(String),
+      '/bookings/b1',
+    );
+  });
+
+  it('keeps the deposit held when the booking has a dispute', async () => {
+    const { prisma, notifications } = arrange({
+      dispute: { id: 'd1', status: 'flagged' },
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ depositStatus: 'released' }),
+      }),
+    );
+  });
+
+  it('refuses to let the renter complete a booking', async () => {
+    const { prisma, notifications } = arrange();
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'renter-1', { status: 'completed' }),
+    ).rejects.toThrow('Only the owner can complete a booking');
+  });
+
+  it('releases the deposit on cancellation too', async () => {
+    const { prisma, notifications } = arrange();
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'cancelled',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ depositStatus: 'released' }),
+      }),
+    );
+  });
+
+  it('does nothing deposit-related for a booking with no held deposit', async () => {
+    const { prisma, notifications } = arrange({
+      depositStatus: null,
+      depositAmount: new Prisma.Decimal(0),
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'owner-1', { status: 'completed' });
+
+    expect(notifications.notify).not.toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ depositStatus: 'released' }),
+      }),
+    );
+  });
+});
+
+describe('BookingsService.updateStatus authorization', () => {
+  const booking = {
+    id: 'b1',
+    requestNumber: 'GL-1',
+    listingId: 'l1',
+    renterId: 'renter-1',
+    status: 'confirmed',
+    depositStatus: null,
+    depositAmount: new Prisma.Decimal(0),
+    currency: 'ZAR',
+    total: new Prisma.Decimal(150),
+    startDate: new Date('2026-09-01'),
+    endDate: new Date('2026-09-03'),
+    dispute: null,
+    listing: {
+      id: 'l1',
+      title: 'Canon R5',
+      ownerId: 'owner-1',
+      cancellationPolicy: 'moderate',
+    },
+  };
+
+  it('forbids a caller who is neither the renter nor the listing owner', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'stranger-1', { status: 'cancelled' }),
+    ).rejects.toThrow(ForbiddenException);
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('allows the listing owner to cancel, not just the renter', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+    (prisma.booking.update as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      status: 'cancelled',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'cancelled' }),
+    ).resolves.toEqual({ id: 'b1', status: 'cancelled' });
   });
 });

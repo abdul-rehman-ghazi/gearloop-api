@@ -31,12 +31,6 @@ enum BookingStatus {
   cancelled
 }
 
-enum PayoutStatus {
-  pending
-  paid
-  on_hold
-}
-
 enum PickupMethod {
   pickup
   delivery
@@ -60,11 +54,6 @@ enum HandoffStage {
   // `returned`, not `return` — `return` is a JS/TS keyword and the generated
   // client exposes enum values as bare property names.
   returned
-}
-
-enum CardBrand {
-  Visa
-  Mastercard
 }
 
 enum ReviewDirection {
@@ -96,55 +85,59 @@ enum CancelledBy {
 // ── Core entities ─────────────────────────────────────
 
 model User {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   passwordHash String
   initials     String
   // Every user can rent. isOwner flips on once they create their first
   // listing — this replaces a renter/owner enum so one account can do both,
   // matching the "same account, role-based" decision from the design phase.
-  isOwner       Boolean  @default(false)
-  isSuspended   Boolean  @default(false)
-  memberSince   DateTime @default(now())
-  responseTime  String?
-  deletedAt     DateTime?
+  isOwner      Boolean   @default(false)
+  isSuspended  Boolean   @default(false)
+  memberSince  DateTime  @default(now())
+  responseTime String?
+  deletedAt    DateTime?
 
-  listings       Listing[]
-  bookings       Booking[]       @relation("RenterBookings")
-  paymentMethods PaymentMethod[]
-  messages       Message[]
+  listings               Listing[]
+  bookings               Booking[]       @relation("RenterBookings")
+  messages               Message[]
   messageThreadsAsRenter MessageThread[] @relation("RenterThreads")
-  reviewsAuthored Review[] @relation("ReviewsAuthored")
-  reviewsReceived Review[] @relation("ReviewsReceived")
-  notifications Notification[]
-  handoffPhotos HandoffPhoto[]
+  reviewsAuthored        Review[]        @relation("ReviewsAuthored")
+  reviewsReceived        Review[]        @relation("ReviewsReceived")
+  notifications          Notification[]
+  handoffPhotos          HandoffPhoto[]
 
   @@map("users")
 }
 
 model Listing {
-  id          String          @id @default(uuid())
-  title       String
-  category    ListingCategory
-  location    String
-  pricePerDay Decimal         @db.Decimal(10, 2)
+  id                 String             @id @default(uuid())
+  title              String
+  category           ListingCategory
+  // ISO 3166-1 alpha-2 country code, validated at the DTO layer with
+  // class-validator's @IsISO31661Alpha2(). Drives the listing's charge/
+  // display currency via CURRENCY_BY_COUNTRY (src/common/country-currency.ts)
+  // — deliberately a plain string, not a Prisma enum: ~250 countries would
+  // make that enum a migration magnet every time ISO revises the list.
+  country            String             @default("ZA") @db.Char(2)
+  pricePerDay        Decimal            @db.Decimal(10, 2)
   // What the owner asks renters to put up as a security deposit. 0 (the
   // default) means this listing takes no deposit and booking creation
   // places no second hold.
-  depositAmount Decimal @default(0) @db.Decimal(10, 2)
+  depositAmount      Decimal            @default(0) @db.Decimal(10, 2)
   // Renter-facing refund tiers on cancellation. Owner picks this at
   // create/edit time; a past booking snapshots the rate it was cancelled
   // under (Booking.refundAmount) so a later policy change can't rewrite it.
   cancellationPolicy CancellationPolicy @default(moderate)
-  description String          @db.Text
+  description        String             @db.Text
   // ponytail: images stored as data URLs, no object storage. Fine for
   // mock/dev scale; move to S3/R2 + store URLs here if photo count/size
   // grows.
-  images      String[]        @default([])
-  status      ListingStatus   @default(pending)
-  createdAt   DateTime        @default(now())
-  deletedAt   DateTime?
+  images             String[]           @default([])
+  status             ListingStatus      @default(pending)
+  createdAt          DateTime           @default(now())
+  deletedAt          DateTime?
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
@@ -168,21 +161,14 @@ model Booking {
   startDate     DateTime      @db.Date
   endDate       DateTime      @db.Date
   pickupMethod  PickupMethod
-  payoutStatus  PayoutStatus?
   createdAt     DateTime      @default(now())
   deletedAt     DateTime?
 
-  // Stripe PaymentIntent id; set once the auth-hold succeeds. Nullable
-  // because a booking row only ever exists after a successful authorize,
-  // but rows written before this feature shipped have no intent.
-  paymentIntentId String?
+  // Snapshot of the listing's charge currency at booking time (see
+  // Listing.country), same reasoning as pricePerDayAtBooking below.
+  currency String @default("ZAR")
 
-  // Second Stripe PaymentIntent, held (never captured) for the rental's
-  // duration and released on a clean return. Separate from paymentIntentId
-  // because the rental hold is captured at `confirmed` while the deposit
-  // must stay uncaptured — one intent cannot be both.
-  depositIntentId String?
-  depositStatus   DepositStatus?
+  depositStatus DepositStatus?
 
   // Snapshot, same reasoning as pricePerDayAtBooking: an owner raising a
   // listing's deposit must not retroactively change what a past booking
@@ -214,19 +200,20 @@ model Booking {
   renterId String
   renter   User   @relation("RenterBookings", fields: [renterId], references: [id])
 
-  paymentMethodId String
-  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
-
-  dispute Dispute?
-  reviews Review[]
+  dispute       Dispute?
+  reviews       Review[]
   handoffPhotos HandoffPhoto[]
 
-  // TODO before going live: Postgres can't enforce "no overlapping date
-  // ranges per listing" through Prisma alone — that needs a raw SQL
-  // migration adding an EXCLUDE constraint (via the btree_gist extension)
-  // on (listingId, daterange(startDate, endDate)). Until that migration
-  // exists, this check has to happen in the booking service, not the DB.
+  // "No overlapping date ranges per listing" is enforced in the DB by the
+  // bookings_no_overlapping_confirmed EXCLUDE constraint (btree_gist, raw
+  // SQL — Prisma can't express EXCLUDE, so it's unmanaged here) on
+  // (listingId, daterange(startDate, endDate)) WHERE status = 'confirmed'.
+  // BookingsService.assertNoActiveOverlap / blockingBooking() in
+  // booking-availability.util.ts do the same check at the application level
+  // for a friendlier error; the DB constraint is the backstop for the race
+  // between two concurrent requests.
 
+  @@index([listingId, status])
   @@map("bookings")
 }
 
@@ -246,28 +233,10 @@ model Blackout {
   @@map("blackouts")
 }
 
-model PaymentMethod {
-  id       String    @id @default(uuid())
-  brand    CardBrand
-  last4    String
-  expires  String
-  // Stripe (or whichever processor) token — the actual card number/CVV
-  // never touches this database. last4/expires are just what Stripe
-  // returns for display; this field is what actually charges the card.
-  processorPaymentMethodId String @unique
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  bookings Booking[]
-
-  @@map("payment_methods")
-}
-
 model MessageThread {
-  id       String   @id @default(uuid())
-  unreadForRenter Boolean @default(false)
-  unreadForOwner  Boolean @default(false)
+  id              String   @id @default(uuid())
+  unreadForRenter Boolean  @default(false)
+  unreadForOwner  Boolean  @default(false)
   createdAt       DateTime @default(now())
 
   listingId String
@@ -310,7 +279,7 @@ model Dispute {
   // Non-null = a damage claim against the booking's deposit. Bounded by
   // booking.depositAmount at the service layer (no DB check constraint,
   // matching the Review.rating precedent).
-  claimAmount Decimal? @db.Decimal(10, 2)
+  claimAmount    Decimal? @db.Decimal(10, 2)
   // What an admin actually awarded: 0 <= resolvedAmount <= claimAmount.
   // Drives the partial capture at resolution time.
   resolvedAmount Decimal? @db.Decimal(10, 2)

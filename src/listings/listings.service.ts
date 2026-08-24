@@ -11,6 +11,7 @@ import { UpdateListingDto } from './dto/update-listing.dto';
 import { SearchListingsDto } from './dto/search-listings.dto';
 import { CreateBlackoutDto } from './dto/create-blackout.dto';
 import { Prisma } from '../../generated/prisma/client';
+import { blockingBooking } from '../bookings/booking-availability.util';
 
 @Injectable()
 export class ListingsService {
@@ -38,9 +39,7 @@ export class ListingsService {
         ? { OR: [{ status: 'active' }, { ownerId: callerUserId }] }
         : { status: 'active' }),
       ...(dto.category && { category: dto.category }),
-      ...(dto.location && {
-        location: { contains: dto.location, mode: 'insensitive' },
-      }),
+      ...(dto.country && { country: dto.country }),
       ...(dto.ownerId && { ownerId: dto.ownerId }),
     };
 
@@ -49,7 +48,7 @@ export class ListingsService {
       const end = new Date(dto.endDate);
       where.bookings = {
         none: {
-          status: 'confirmed',
+          ...blockingBooking(),
           startDate: { lt: end },
           endDate: { gt: start },
         },
@@ -90,7 +89,7 @@ export class ListingsService {
     await this.findById(id);
     const [bookings, blackouts] = await this.prisma.$transaction([
       this.prisma.booking.findMany({
-        where: { listingId: id, status: 'confirmed', deletedAt: null },
+        where: { listingId: id, ...blockingBooking(), deletedAt: null },
         select: { startDate: true, endDate: true },
       }),
       this.prisma.blackout.findMany({
@@ -118,7 +117,10 @@ export class ListingsService {
     await this.assertOwnership(id, ownerId);
 
     const activeBooking = await this.prisma.booking.findFirst({
-      where: { listingId: id, status: { in: ['pending', 'confirmed'] } },
+      where: {
+        listingId: id,
+        status: { in: ['pending', 'confirmed'] },
+      },
     });
     if (activeBooking) {
       throw new ConflictException(
@@ -174,19 +176,17 @@ export class ListingsService {
       throw new BadRequestException('endDate must be after startDate');
     }
 
-    const confirmedOverlap = await this.prisma.booking.findFirst({
+    const activeOverlap = await this.prisma.booking.findFirst({
       where: {
         listingId,
-        status: 'confirmed',
+        ...blockingBooking(),
         deletedAt: null,
         startDate: { lt: end },
         endDate: { gt: start },
       },
     });
-    if (confirmedOverlap) {
-      throw new ConflictException(
-        'Those dates already have a confirmed booking',
-      );
+    if (activeOverlap) {
+      throw new ConflictException('Those dates already have an active booking');
     }
 
     return this.prisma.blackout.create({
