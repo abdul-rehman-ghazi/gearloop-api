@@ -15,6 +15,7 @@ import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { SearchListingsDto } from './dto/search-listings.dto';
+import { CreateBlackoutDto } from './dto/create-blackout.dto';
 import { JwtUserAuthGuard } from '../auth/guards/jwt-user-auth.guard';
 import { OptionalJwtUserAuthGuard } from '../auth/guards/optional-jwt-user-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -42,6 +43,33 @@ export class ListingsController {
   @Get(':id/booked-ranges')
   getBookedRanges(@Param('id') id: string) {
     return this.listingsService.getBookedRanges(id);
+  }
+
+  @UseGuards(JwtUserAuthGuard)
+  @Get(':id/blackouts')
+  listBlackouts(@CurrentUser() user: UserAuthContext, @Param('id') id: string) {
+    return this.listingsService.listBlackouts(id, user.userId);
+  }
+
+  @UseGuards(JwtUserAuthGuard)
+  @Post(':id/blackouts')
+  createBlackout(
+    @CurrentUser() user: UserAuthContext,
+    @Param('id') id: string,
+    @Body() dto: CreateBlackoutDto,
+  ) {
+    return this.listingsService.createBlackout(id, user.userId, dto);
+  }
+
+  @UseGuards(JwtUserAuthGuard)
+  @Delete(':id/blackouts/:blackoutId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeBlackout(
+    @CurrentUser() user: UserAuthContext,
+    @Param('id') id: string,
+    @Param('blackoutId') blackoutId: string,
+  ) {
+    return this.listingsService.removeBlackout(id, blackoutId, user.userId);
   }
 
   @Get(':id')

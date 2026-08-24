@@ -134,13 +134,14 @@ model Listing {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  bookings Booking[]
-  threads  MessageThread[]
+  bookings  Booking[]
+  threads   MessageThread[]
+  blackouts Blackout[]
 
-  // Note: mock data's unavailableDaysOfMonth is gone entirely. Availability
-  // is now derived by querying confirmed Bookings whose date range overlaps
-  // the requested dates — a stored list would drift out of sync with actual
-  // bookings the moment one is cancelled or added.
+  // Note: mock data's unavailableDaysOfMonth is gone. Availability is
+  // derived from confirmed Bookings (auto, can't drift) plus owner-created
+  // Blackout rows (explicit, for personal use/travel/repairs) — never a
+  // stored day list that could drift out of sync on its own.
 
   @@map("listings")
 }
@@ -203,6 +204,22 @@ model Booking {
   // exists, this check has to happen in the booking service, not the DB.
 
   @@map("bookings")
+}
+
+model Blackout {
+  id        String   @id @default(uuid())
+  // Half-open, same convention as Booking: startDate inclusive, endDate
+  // exclusive. Every overlap check in this codebase is written for that.
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, startDate])
+  @@map("blackouts")
 }
 
 model PaymentMethod {

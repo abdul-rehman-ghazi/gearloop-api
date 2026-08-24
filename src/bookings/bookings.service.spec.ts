@@ -24,6 +24,9 @@ function makePrisma() {
       create: jest.fn(),
       update: jest.fn(),
     },
+    blackout: {
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
   } as unknown as PrismaService;
 }
 
@@ -767,5 +770,80 @@ describe('BookingsService.updateStatus deposit release', () => {
     expect(payments.release).not.toHaveBeenCalled();
     expect(notifications.notify).not.toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalled();
+  });
+});
+
+describe('BookingsService availability blackouts', () => {
+  const listing = {
+    id: 'l1',
+    title: 'Canon R5',
+    ownerId: 'owner-1',
+    pricePerDay: 100,
+    deletedAt: null,
+  };
+  const paymentMethod = {
+    id: 'pm1',
+    userId: 'renter-1',
+    processorPaymentMethodId: 'pm_card_visa',
+  };
+  const dto = {
+    listingId: 'l1',
+    paymentMethodId: 'pm1',
+    pickupMethod: 'pickup' as const,
+    startDate: '2026-09-01',
+    endDate: '2026-09-03',
+  };
+
+  it('rejects a new booking that overlaps a blackout', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.paymentMethod.findUnique as jest.Mock).mockResolvedValue(
+      paymentMethod,
+    );
+    (prisma.blackout.findFirst as jest.Mock).mockResolvedValue({
+      id: 'bo1',
+      listingId: 'l1',
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      'Listing is not available for the selected dates',
+    );
+
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+    expect(payments.authorize).not.toHaveBeenCalled();
+  });
+
+  it('rejects confirming a pending booking whose dates were later blacked out', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    const payments = makePayments();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      renterId: 'renter-1',
+      paymentIntentId: 'pi_1',
+      listing: { id: 'l1', ownerId: 'owner-1', title: 'Canon R5' },
+      dispute: null,
+    });
+    (prisma.booking.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      listingId: 'l1',
+      startDate: new Date('2026-09-01'),
+      endDate: new Date('2026-09-03'),
+    });
+    (prisma.blackout.findFirst as jest.Mock).mockResolvedValue({
+      id: 'bo1',
+      listingId: 'l1',
+    });
+
+    const service = new BookingsService(prisma, notifications, payments);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'confirmed' }),
+    ).rejects.toThrow('Listing is not available for the selected dates');
+
+    expect(payments.capture).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 });

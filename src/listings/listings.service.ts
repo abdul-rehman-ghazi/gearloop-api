@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { SearchListingsDto } from './dto/search-listings.dto';
+import { CreateBlackoutDto } from './dto/create-blackout.dto';
 import { Prisma } from '../../generated/prisma/client';
 
 @Injectable()
@@ -52,6 +54,12 @@ export class ListingsService {
           endDate: { gt: start },
         },
       };
+      where.blackouts = {
+        none: {
+          startDate: { lt: end },
+          endDate: { gt: start },
+        },
+      };
     }
 
     const page = dto.page ?? 1;
@@ -80,10 +88,17 @@ export class ListingsService {
 
   async getBookedRanges(id: string) {
     await this.findById(id);
-    return this.prisma.booking.findMany({
-      where: { listingId: id, status: 'confirmed', deletedAt: null },
-      select: { startDate: true, endDate: true },
-    });
+    const [bookings, blackouts] = await this.prisma.$transaction([
+      this.prisma.booking.findMany({
+        where: { listingId: id, status: 'confirmed', deletedAt: null },
+        select: { startDate: true, endDate: true },
+      }),
+      this.prisma.blackout.findMany({
+        where: { listingId: id },
+        select: { startDate: true, endDate: true },
+      }),
+    ]);
+    return [...bookings, ...blackouts];
   }
 
   async update(id: string, ownerId: string, dto: UpdateListingDto) {
@@ -135,6 +150,54 @@ export class ListingsService {
     return this.prisma.listing.update({
       where: { id },
       data: { status: 'rejected' },
+    });
+  }
+
+  async listBlackouts(listingId: string, ownerId: string) {
+    await this.assertOwnership(listingId, ownerId);
+    return this.prisma.blackout.findMany({
+      where: { listingId },
+      orderBy: { startDate: 'asc' },
+    });
+  }
+
+  async createBlackout(
+    listingId: string,
+    ownerId: string,
+    dto: CreateBlackoutDto,
+  ) {
+    await this.assertOwnership(listingId, ownerId);
+
+    const start = new Date(dto.startDate);
+    const end = new Date(dto.endDate);
+    if (end <= start) {
+      throw new BadRequestException('endDate must be after startDate');
+    }
+
+    const confirmedOverlap = await this.prisma.booking.findFirst({
+      where: {
+        listingId,
+        status: 'confirmed',
+        deletedAt: null,
+        startDate: { lt: end },
+        endDate: { gt: start },
+      },
+    });
+    if (confirmedOverlap) {
+      throw new ConflictException(
+        'Those dates already have a confirmed booking',
+      );
+    }
+
+    return this.prisma.blackout.create({
+      data: { listingId, startDate: start, endDate: end, reason: dto.reason },
+    });
+  }
+
+  async removeBlackout(listingId: string, blackoutId: string, ownerId: string) {
+    await this.assertOwnership(listingId, ownerId);
+    await this.prisma.blackout.deleteMany({
+      where: { id: blackoutId, listingId },
     });
   }
 

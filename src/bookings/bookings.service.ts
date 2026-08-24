@@ -355,6 +355,19 @@ export class BookingsService {
         'Listing is not available for the selected dates',
       );
     }
+
+    const blackout = await this.prisma.blackout.findFirst({
+      where: {
+        listingId,
+        startDate: { lt: end },
+        endDate: { gt: start },
+      },
+    });
+    if (blackout) {
+      throw new ConflictException(
+        'Listing is not available for the selected dates',
+      );
+    }
   }
 
   private isExclusionViolation(err: unknown): boolean {
