@@ -99,6 +99,14 @@ model User {
   responseTime String?
   deletedAt    DateTime?
 
+  // Renter's delivery point / owner's dispatch point. Geocoded once at
+  // save time (src/common/geocoding.ts) — never re-derived from bookings.
+  // lat/lng are never serialized to any API response; only `address` and,
+  // on a public profile, the derived `hasAddress` boolean are.
+  address String?
+  lat     Decimal? @db.Decimal(9, 6)
+  lng     Decimal? @db.Decimal(9, 6)
+
   listings               Listing[]
   bookings               Booking[]       @relation("RenterBookings")
   messages               Message[]
@@ -192,6 +200,7 @@ model Booking {
   subtotal             Decimal @db.Decimal(10, 2)
   serviceFee           Decimal @db.Decimal(10, 2)
   tax                  Decimal @db.Decimal(10, 2)
+  deliveryFee          Decimal @default(0) @db.Decimal(10, 2)
   total                Decimal @db.Decimal(10, 2)
 
   listingId String
