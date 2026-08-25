@@ -5,8 +5,8 @@ describe('chargeCurrency', () => {
     expect(chargeCurrency('GB')).toBe('GBP');
   });
 
-  it('falls back to ZAR for a country whose currency MCP does not support', () => {
-    expect(chargeCurrency('KE')).toBe('ZAR');
+  it('returns the local currency for any mapped country', () => {
+    expect(chargeCurrency('KE')).toBe('KES');
   });
 
   it('falls back to ZAR for an unknown country code', () => {

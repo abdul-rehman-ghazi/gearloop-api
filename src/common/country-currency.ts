@@ -256,20 +256,6 @@ export const CURRENCY_BY_COUNTRY: Record<string, string> = {
   ZW: 'ZWG',
 };
 
-// The set of currencies a listing may be priced and charged in. Everything
-// else falls back to ZAR so the renter is never quoted a currency the
-// platform can't actually settle in.
-export const MCP_CURRENCIES = new Set([
-  'ZAR',
-  'USD',
-  'GBP',
-  'EUR',
-  'AUD',
-  'NZD',
-  'CAD',
-]);
-
 export function chargeCurrency(country: string): string {
-  const currency = CURRENCY_BY_COUNTRY[country];
-  return currency && MCP_CURRENCIES.has(currency) ? currency : 'ZAR';
+  return CURRENCY_BY_COUNTRY[country] ?? 'ZAR';
 }
