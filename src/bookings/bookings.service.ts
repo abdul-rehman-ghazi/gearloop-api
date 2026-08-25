@@ -50,10 +50,12 @@ export class BookingsService {
     await this.assertNoActiveOverlap(dto.listingId, start, end);
 
     const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000);
-    const { subtotal, serviceFee, tax, total: baseTotal } = calculateBookingPricing(
-      listing.pricePerDay,
-      nights,
-    );
+    const {
+      subtotal,
+      serviceFee,
+      tax,
+      total: baseTotal,
+    } = calculateBookingPricing(listing.pricePerDay, nights);
     const deliveryFee = await this.resolveDeliveryFee(
       dto.pickupMethod,
       renterId,
@@ -133,7 +135,9 @@ export class BookingsService {
     ]);
 
     if (!owner || owner.lat === null || owner.lng === null) {
-      throw new BadRequestException('This owner has not set a delivery address');
+      throw new BadRequestException(
+        'This owner has not set a delivery address',
+      );
     }
     if (!renter || renter.lat === null || renter.lng === null) {
       throw new BadRequestException(

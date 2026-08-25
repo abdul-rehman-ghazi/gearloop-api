@@ -346,9 +346,9 @@ describe('BookingsService.updateStatus cancellation refunds', () => {
       status: 'cancelled',
     });
 
-    expect((updated as { refundAmount: Prisma.Decimal }).refundAmount.toString()).toBe(
-      '100',
-    );
+    expect(
+      (updated as { refundAmount: Prisma.Decimal }).refundAmount.toString(),
+    ).toBe('100');
   });
 
   it('rejects cancelling a booking that is already completed', async () => {
@@ -388,9 +388,9 @@ describe('BookingsService.updateStatus cancellation refunds', () => {
       status: 'cancelled',
     });
 
-    expect((updated as { refundAmount: Prisma.Decimal }).refundAmount.toString()).toBe(
-      '200',
-    );
+    expect(
+      (updated as { refundAmount: Prisma.Decimal }).refundAmount.toString(),
+    ).toBe('200');
   });
 
   it('includes the currency in the refund notification to the renter', async () => {

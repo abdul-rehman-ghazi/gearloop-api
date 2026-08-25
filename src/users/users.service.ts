@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { computeInitials } from '../auth/utils/initials.util';
@@ -39,8 +43,16 @@ export class UsersService {
     // Public view: no email, no passwordHash, no address/coordinates —
     // only what's safe to show a stranger browsing a listing. hasAddress
     // lets the renter know delivery is possible without seeing where.
-    const { id: userId, name, initials, isOwner, memberSince, responseTime, lat, lng } =
-      user;
+    const {
+      id: userId,
+      name,
+      initials,
+      isOwner,
+      memberSince,
+      responseTime,
+      lat,
+      lng,
+    } = user;
     return {
       id: userId,
       name,

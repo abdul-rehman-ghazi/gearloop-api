@@ -1,11 +1,20 @@
-import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { QuoteDto } from './dto/quote.dto';
 import {
   calculateBookingPricing,
   SERVICE_FEE_RATE,
   TAX_RATE,
 } from '../bookings/booking-pricing.util';
-import { deliveryFeeForDistance, haversineKm } from '../bookings/delivery-pricing.util';
+import {
+  deliveryFeeForDistance,
+  haversineKm,
+} from '../bookings/delivery-pricing.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { OptionalJwtUserAuthGuard } from '../auth/guards/optional-jwt-user-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -46,7 +55,9 @@ export class PricingController {
   ): Promise<number> {
     if (dto.pickupMethod !== 'delivery') return 0;
     if (!dto.listingId) {
-      throw new BadRequestException('listingId is required for delivery pricing');
+      throw new BadRequestException(
+        'listingId is required for delivery pricing',
+      );
     }
     if (!user) {
       throw new BadRequestException('Sign in to get delivery pricing');
@@ -65,7 +76,9 @@ export class PricingController {
 
     if (!listing) throw new BadRequestException('Listing not found');
     if (listing.owner.lat === null || listing.owner.lng === null) {
-      throw new BadRequestException('This owner has not set a delivery address');
+      throw new BadRequestException(
+        'This owner has not set a delivery address',
+      );
     }
     if (!renter || renter.lat === null || renter.lng === null) {
       throw new BadRequestException(

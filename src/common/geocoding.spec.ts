@@ -10,8 +10,8 @@ describe('geocodeAddress', () => {
   it('returns coordinates for a successful lookup', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => [{ lat: '-33.9249', lon: '18.4241' }],
-    }) as unknown as typeof fetch;
+      json: () => Promise.resolve([{ lat: '-33.9249', lon: '18.4241' }]),
+    });
 
     const point = await geocodeAddress('Cape Town, South Africa');
 
@@ -21,8 +21,8 @@ describe('geocodeAddress', () => {
   it('returns null when no results are found', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => [],
-    }) as unknown as typeof fetch;
+      json: () => Promise.resolve([]),
+    });
 
     const point = await geocodeAddress('asdkfjhaslkdjfh nonsense address');
 
@@ -32,8 +32,8 @@ describe('geocodeAddress', () => {
   it('returns null when the request fails', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
-      json: async () => ({}),
-    }) as unknown as typeof fetch;
+      json: () => Promise.resolve({}),
+    });
 
     const point = await geocodeAddress('Cape Town');
 
@@ -43,9 +43,9 @@ describe('geocodeAddress', () => {
   it('sends a descriptive User-Agent header, per Nominatim usage policy', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => [{ lat: '0', lon: '0' }],
+      json: () => Promise.resolve([{ lat: '0', lon: '0' }]),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     await geocodeAddress('Null Island');
 

@@ -14,7 +14,9 @@ interface NominatimResult {
 // path. See spec's "Out of scope" for why there's no caching/retry here.
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
-export async function geocodeAddress(address: string): Promise<GeoPoint | null> {
+export async function geocodeAddress(
+  address: string,
+): Promise<GeoPoint | null> {
   const url = `${NOMINATIM_URL}?format=json&limit=1&q=${encodeURIComponent(address)}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Gearloop/1.0 (rental-marketplace-api)' },

@@ -40,7 +40,12 @@ describe('PricingController', () => {
     const controller = new PricingController(prisma);
 
     const quote = await controller.quote(
-      { pricePerDay: 100, nights: 2, pickupMethod: 'delivery', listingId: 'l1' },
+      {
+        pricePerDay: 100,
+        nights: 2,
+        pickupMethod: 'delivery',
+        listingId: 'l1',
+      },
       renter,
     );
 
@@ -74,7 +79,12 @@ describe('PricingController', () => {
 
     await expect(
       controller.quote(
-        { pricePerDay: 100, nights: 2, pickupMethod: 'delivery', listingId: 'l1' },
+        {
+          pricePerDay: 100,
+          nights: 2,
+          pickupMethod: 'delivery',
+          listingId: 'l1',
+        },
         renter,
       ),
     ).rejects.toThrow('Add your address');
@@ -89,7 +99,12 @@ describe('PricingController', () => {
 
     await expect(
       controller.quote(
-        { pricePerDay: 100, nights: 2, pickupMethod: 'delivery', listingId: 'l1' },
+        {
+          pricePerDay: 100,
+          nights: 2,
+          pickupMethod: 'delivery',
+          listingId: 'l1',
+        },
         renter,
       ),
     ).rejects.toThrow('has not set a delivery address');

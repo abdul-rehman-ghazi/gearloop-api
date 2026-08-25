@@ -79,9 +79,9 @@ describe('UsersService.update', () => {
 
     const service = new UsersService(prisma);
 
-    await expect(
-      service.update('u1', { address: 'nonsense' }),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.update('u1', { address: 'nonsense' })).rejects.toThrow(
+      BadRequestException,
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
