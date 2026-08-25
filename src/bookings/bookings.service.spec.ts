@@ -9,6 +9,9 @@ function makePrisma() {
     listing: {
       findUnique: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
     booking: {
       findUnique: jest.fn(),
       findFirst: jest.fn().mockResolvedValue(null),
@@ -133,6 +136,62 @@ describe('BookingsService.create', () => {
     const service = new BookingsService(prisma, notifications);
     await expect(service.create('renter-1', dto)).rejects.toThrow(
       ConflictException,
+    );
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('BookingsService.create — delivery pricing', () => {
+  const listing = {
+    id: 'l1',
+    title: 'Canon R5',
+    ownerId: 'owner-1',
+    pricePerDay: 100,
+    country: 'ZA',
+    depositAmount: new Prisma.Decimal(0),
+    deletedAt: null,
+  };
+  const deliveryDto = {
+    listingId: 'l1',
+    pickupMethod: 'delivery' as const,
+    startDate: '2026-09-01',
+    endDate: '2026-09-03',
+  };
+
+  it('adds a distance-based deliveryFee when both parties have addresses', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce({ lat: -33.9249, lng: 18.4241 }) // owner
+      .mockResolvedValueOnce({ lat: -26.2041, lng: 28.0473 }); // renter
+    (prisma.booking.create as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      requestNumber: 'GL-1',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.create('renter-1', deliveryDto);
+
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ deliveryFee: 50 }),
+      }),
+    );
+  });
+
+  it('rejects a delivery booking when the renter has no address', async () => {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue(listing);
+    (prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce({ lat: -33.9249, lng: 18.4241 }) // owner
+      .mockResolvedValueOnce({ lat: null, lng: null }); // renter
+
+    const service = new BookingsService(prisma, notifications);
+
+    await expect(service.create('renter-1', deliveryDto)).rejects.toThrow(
+      'Add your address',
     );
     expect(prisma.booking.create).not.toHaveBeenCalled();
   });

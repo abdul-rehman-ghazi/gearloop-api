@@ -13,6 +13,7 @@ import { calculateRefund } from './booking-cancellation.util';
 import { blockingBooking } from './booking-availability.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { chargeCurrency } from '../common/country-currency';
+import { deliveryFeeForDistance, haversineKm } from './delivery-pricing.util';
 import { Prisma } from '../../generated/prisma/client';
 import type {
   BookingStatus,
@@ -49,10 +50,16 @@ export class BookingsService {
     await this.assertNoActiveOverlap(dto.listingId, start, end);
 
     const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000);
-    const { subtotal, serviceFee, tax, total } = calculateBookingPricing(
+    const { subtotal, serviceFee, tax, total: baseTotal } = calculateBookingPricing(
       listing.pricePerDay,
       nights,
     );
+    const deliveryFee = await this.resolveDeliveryFee(
+      dto.pickupMethod,
+      renterId,
+      listing.ownerId,
+    );
+    const total = baseTotal.plus(deliveryFee);
     const depositAmount = new Prisma.Decimal(listing.depositAmount ?? 0);
     const currency = chargeCurrency(listing.country);
 
@@ -69,6 +76,7 @@ export class BookingsService {
           subtotal,
           serviceFee,
           tax,
+          deliveryFee,
           total,
           currency,
           depositAmount,
@@ -100,6 +108,44 @@ export class BookingsService {
       }
       throw err;
     }
+  }
+
+  // Same recomputation as PricingController#resolveDeliveryFee — kept
+  // separate rather than shared because the two callers have different
+  // inputs (a raw ownerId/renterId pair here vs. an authenticated caller +
+  // listingId lookup there) and different error framing needs.
+  private async resolveDeliveryFee(
+    pickupMethod: CreateBookingDto['pickupMethod'],
+    renterId: string,
+    ownerId: string,
+  ): Promise<number> {
+    if (pickupMethod !== 'delivery') return 0;
+
+    const [owner, renter] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: ownerId },
+        select: { lat: true, lng: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: renterId },
+        select: { lat: true, lng: true },
+      }),
+    ]);
+
+    if (!owner || owner.lat === null || owner.lng === null) {
+      throw new BadRequestException('This owner has not set a delivery address');
+    }
+    if (!renter || renter.lat === null || renter.lng === null) {
+      throw new BadRequestException(
+        'Add your address in your profile to get delivery pricing',
+      );
+    }
+
+    const km = haversineKm(
+      { lat: Number(owner.lat), lng: Number(owner.lng) },
+      { lat: Number(renter.lat), lng: Number(renter.lng) },
+    );
+    return deliveryFeeForDistance(km);
   }
 
   // `dispute` is here for the deposit-release decision in updateStatus:
