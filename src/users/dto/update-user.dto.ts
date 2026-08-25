@@ -1,7 +1,7 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-// name/responseTime only — email, passwordHash, isOwner, memberSince are
-// never user-editable through this endpoint.
+// name/responseTime/address only — email, passwordHash, isOwner, memberSince
+// are never user-editable through this endpoint.
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
@@ -12,4 +12,9 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(100)
   responseTime?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  address?: string;
 }
