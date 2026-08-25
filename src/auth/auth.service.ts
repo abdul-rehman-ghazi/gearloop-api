@@ -82,8 +82,13 @@ export class AuthService {
     });
   }
 
-  private sanitize(user: { passwordHash: string; [key: string]: unknown }) {
-    const { passwordHash: _passwordHash, ...rest } = user;
+  private sanitize(user: {
+    passwordHash: string;
+    lat: unknown;
+    lng: unknown;
+    [key: string]: unknown;
+  }) {
+    const { passwordHash: _passwordHash, lat: _lat, lng: _lng, ...rest } = user;
     return rest;
   }
 }
