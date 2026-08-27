@@ -1,5 +1,16 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  MessageEvent,
+  Param,
+  Post,
+  Sse,
+  UseGuards,
+} from '@nestjs/common';
+import type { Observable } from 'rxjs';
 import { MessagesService } from './messages.service';
+import { MessageEventsService } from './message-events.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JwtUserAuthGuard } from '../auth/guards/jwt-user-auth.guard';
@@ -9,7 +20,15 @@ import type { UserAuthContext } from '../auth/strategies/jwt-user.strategy';
 @UseGuards(JwtUserAuthGuard)
 @Controller('messages')
 export class MessagesController {
-  constructor(private readonly messagesService: MessagesService) {}
+  constructor(
+    private readonly messagesService: MessagesService,
+    private readonly events: MessageEventsService,
+  ) {}
+
+  @Sse('stream')
+  stream(@CurrentUser() user: UserAuthContext): Observable<MessageEvent> {
+    return this.events.streamFor(user.userId);
+  }
 
   @Post('threads')
   createThread(

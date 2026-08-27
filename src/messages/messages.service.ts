@@ -8,12 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MessageEventsService } from './message-events.service';
 
 @Injectable()
 export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly events: MessageEventsService,
   ) {}
 
   async createThread(renterId: string, dto: CreateThreadDto) {
@@ -50,6 +52,7 @@ export class MessagesService {
       dto.text,
       `/messages/${thread.id}`,
     );
+    this.events.emit(listing.ownerId, thread.id);
 
     return this.prisma.messageThread.update({
       where: { id: thread.id },
@@ -66,13 +69,15 @@ export class MessagesService {
       data: { threadId, senderId, text: dto.text },
     });
 
+    const recipientId = isRenter ? thread.listing.ownerId : thread.renterId;
     await this.notifications.notify(
-      isRenter ? thread.listing.ownerId : thread.renterId,
+      recipientId,
       'message_received',
       `New message about ${thread.listing.title}`,
       dto.text,
       `/messages/${threadId}`,
     );
+    this.events.emit(recipientId, threadId);
 
     return this.prisma.messageThread.update({
       where: { id: threadId },

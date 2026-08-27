@@ -1,6 +1,11 @@
 import { MessagesService } from './messages.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MessageEventsService } from './message-events.service';
+
+function makeEvents() {
+  return { emit: jest.fn() } as unknown as MessageEventsService;
+}
 
 function makePrisma() {
   return {
@@ -37,7 +42,7 @@ describe('MessagesService.createThread notifications', () => {
     (prisma.messageThread.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.messageThread.create as jest.Mock).mockResolvedValue({ id: 't1' });
 
-    const service = new MessagesService(prisma, notifications);
+    const service = new MessagesService(prisma, notifications, makeEvents());
     await service.createThread('renter-1', {
       listingId: 'l1',
       text: 'Is this available?',
@@ -65,7 +70,7 @@ describe('MessagesService.sendMessage notifications', () => {
     const notifications = makeNotifications();
     (prisma.messageThread.findUnique as jest.Mock).mockResolvedValue(thread);
 
-    const service = new MessagesService(prisma, notifications);
+    const service = new MessagesService(prisma, notifications, makeEvents());
     await service.sendMessage('t1', 'renter-1', { text: 'Still there?' });
 
     expect(notifications.notify).toHaveBeenCalledWith(
@@ -82,7 +87,7 @@ describe('MessagesService.sendMessage notifications', () => {
     const notifications = makeNotifications();
     (prisma.messageThread.findUnique as jest.Mock).mockResolvedValue(thread);
 
-    const service = new MessagesService(prisma, notifications);
+    const service = new MessagesService(prisma, notifications, makeEvents());
     await service.sendMessage('t1', 'owner-1', { text: 'Yes it is.' });
 
     expect(notifications.notify).toHaveBeenCalledWith(
