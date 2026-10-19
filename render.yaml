@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: gearloop-api
+    runtime: node
+    plan: free
+    # Keep in the same region as the Neon database and the Vercel functions
+    # (sin1); every page render makes several API → DB round trips.
+    region: singapore
+    branch: master
+    # Free plan has no pre-deploy step, so migrations run during the build.
+    # --include=dev is required: NODE_ENV=production would otherwise skip the
+    # prisma and nest CLIs, which are devDependencies.
+    buildCommand: npm ci --include=dev && npx prisma migrate deploy && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Neon *direct* connection string (not the -pooler host): prisma migrate
+      # needs session-level advisory locks that PgBouncer transaction mode drops.
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_USER_SECRET
+        generateValue: true
+      - key: JWT_USER_EXPIRES_IN
+        value: 1d
+      - key: JWT_ADMIN_SECRET
+        generateValue: true
+      - key: JWT_ADMIN_EXPIRES_IN
+        value: 1d
+      - key: BCRYPT_SALT_ROUNDS
+        value: "10"
+      - key: EMAIL_FROM
+        value: GearLoop <no-reply@gearloop.example>

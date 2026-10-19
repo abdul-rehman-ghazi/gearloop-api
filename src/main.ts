@@ -15,9 +15,20 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3002'],
+    origin: parseCorsOrigins(process.env.CORS_ORIGINS),
     credentials: true,
   });
   await app.listen(process.env.PORT ?? 3000);
 }
+
+function parseCorsOrigins(commaSeparatedOrigins: string | undefined): string[] {
+  if (!commaSeparatedOrigins) return DEFAULT_CORS_ORIGINS;
+  return commaSeparatedOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const DEFAULT_CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:3002'];
+
 void bootstrap();
