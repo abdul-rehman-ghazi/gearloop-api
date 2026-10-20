@@ -27,6 +27,11 @@ import { OptionalJwtUserAuthGuard } from './guards/optional-jwt-user-auth.guard'
     JwtAdminAuthGuard,
     OptionalJwtUserAuthGuard,
   ],
-  exports: [JwtUserAuthGuard, JwtAdminAuthGuard, OptionalJwtUserAuthGuard],
+  exports: [
+    AdminAuthService,
+    JwtUserAuthGuard,
+    JwtAdminAuthGuard,
+    OptionalJwtUserAuthGuard,
+  ],
 })
 export class AuthModule {}

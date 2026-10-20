@@ -8,18 +8,15 @@ import {
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AdminAuthService } from './admin-auth.service';
-import { AdminSignupDto } from './dto/admin-signup.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 
+// No public signup: anyone who could reach it would get full admin access.
+// New admins are created by an existing admin via POST /admin/admins, and
+// the first one by `npm run admin:create`.
 @UseGuards(ThrottlerGuard)
 @Controller('auth/admin')
 export class AdminAuthController {
   constructor(private readonly adminAuthService: AdminAuthService) {}
-
-  @Post('signup')
-  signup(@Body() dto: AdminSignupDto) {
-    return this.adminAuthService.signup(dto);
-  }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @HttpCode(HttpStatus.OK)

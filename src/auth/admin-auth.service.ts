@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { AdminSignupDto } from './dto/admin-signup.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { computeInitials } from './utils/initials.util';
 import { AdminJwtPayload } from './strategies/jwt-admin.strategy';
@@ -20,7 +20,9 @@ export class AdminAuthService {
     private readonly config: ConfigService,
   ) {}
 
-  async signup(dto: AdminSignupDto) {
+  // Returns the profile only, no token: the caller is an existing admin (or
+  // the create-admin script), never the new account logging itself in.
+  async createAdmin(dto: CreateAdminDto) {
     const existing = await this.prisma.adminUser.findUnique({
       where: { email: dto.email },
     });
@@ -42,14 +44,7 @@ export class AdminAuthService {
       },
     });
 
-    return {
-      accessToken: this.signToken({
-        sub: admin.id,
-        email: admin.email,
-        type: 'admin',
-      }),
-      admin: this.sanitize(admin),
-    };
+    return this.sanitize(admin);
   }
 
   async login(dto: AdminLoginDto) {

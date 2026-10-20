@@ -7,10 +7,13 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { AdminAuthService } from '../auth/admin-auth.service';
+import { CreateAdminDto } from '../auth/dto/create-admin.dto';
 import { JwtAdminAuthGuard } from '../auth/guards/jwt-admin-auth.guard';
 import { ListingStatus } from '../../generated/prisma/enums';
 import { AdminUpdateUserDto } from './dto/update-user.dto';
@@ -20,7 +23,15 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 @UseGuards(JwtAdminAuthGuard)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminAuthService: AdminAuthService,
+  ) {}
+
+  @Post('admins')
+  createAdmin(@Body() dto: CreateAdminDto) {
+    return this.adminAuthService.createAdmin(dto);
+  }
 
   @Get('users')
   findAllUsers(@Query() dto: PaginationDto) {
