@@ -1,14 +1,16 @@
-import { IsDateString, IsEnum, IsUUID } from 'class-validator';
+import { IsEnum, IsUUID, Matches } from 'class-validator';
 import { PickupMethod } from '../../../generated/prisma/enums';
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateBookingDto {
   @IsUUID()
   listingId: string;
 
-  @IsDateString()
+  @Matches(DATE_ONLY_PATTERN, { message: 'must be a YYYY-MM-DD date' })
   startDate: string;
 
-  @IsDateString()
+  @Matches(DATE_ONLY_PATTERN, { message: 'must be a YYYY-MM-DD date' })
   endDate: string;
 
   @IsEnum(PickupMethod)

@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmailVerificationService } from './email-verification.service';
+import { EmailService } from '../notifications/email.service';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
 import { JwtUserStrategy } from './strategies/jwt-user.strategy';
@@ -20,6 +22,10 @@ import { OptionalJwtUserAuthGuard } from './guards/optional-jwt-user-auth.guard'
   controllers: [AuthController, AdminAuthController],
   providers: [
     AuthService,
+    EmailVerificationService,
+    // NotificationsModule imports AuthModule, so importing it back here would
+    // be circular; EmailService is stateless, so a second instance is harmless.
+    EmailService,
     AdminAuthService,
     JwtUserStrategy,
     JwtAdminStrategy,

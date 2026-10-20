@@ -8,6 +8,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import type { ReviewDirection } from '../../generated/prisma/enums';
 
+// Public endpoints must not reveal which booking a review belongs to.
+const PUBLIC_REVIEW_OMIT = { bookingId: true } as const;
+
 @Injectable()
 export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -79,7 +82,11 @@ export class ReviewsService {
       booking: { listingId },
     };
     const [reviews, aggregate] = await Promise.all([
-      this.prisma.review.findMany({ where, orderBy: { createdAt: 'desc' } }),
+      this.prisma.review.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        omit: PUBLIC_REVIEW_OMIT,
+      }),
       // Averaged live rather than denormalized onto Listing — no write-path
       // recalculation, no drift.
       this.prisma.review.aggregate({
@@ -99,7 +106,11 @@ export class ReviewsService {
   async findForUser(revieweeId: string) {
     const where = { revieweeId };
     const [reviews, aggregate] = await Promise.all([
-      this.prisma.review.findMany({ where, orderBy: { createdAt: 'desc' } }),
+      this.prisma.review.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        omit: PUBLIC_REVIEW_OMIT,
+      }),
       this.prisma.review.aggregate({
         where,
         _avg: { rating: true },

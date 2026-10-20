@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,12 +44,13 @@ describe('BookingsService.create', () => {
     country: 'ZA',
     depositAmount: new Prisma.Decimal(0),
     deletedAt: null,
+    status: 'active',
   };
   const dto = {
     listingId: 'l1',
     pickupMethod: 'pickup' as const,
-    startDate: '2026-09-01',
-    endDate: '2026-09-03',
+    startDate: '2027-09-01',
+    endDate: '2027-09-03',
   };
 
   it('creates a pending booking and notifies the owner', async () => {
@@ -141,6 +147,87 @@ describe('BookingsService.create', () => {
   });
 });
 
+describe('BookingsService.create — input validation', () => {
+  const listing = {
+    id: 'l1',
+    title: 'Canon R5',
+    ownerId: 'owner-1',
+    pricePerDay: 100,
+    country: 'ZA',
+    depositAmount: new Prisma.Decimal(0),
+    deletedAt: null,
+    status: 'active',
+  };
+  const dto = {
+    listingId: 'l1',
+    pickupMethod: 'pickup' as const,
+    startDate: '2027-09-01',
+    endDate: '2027-09-03',
+  };
+
+  function arrange(listingOverrides: Record<string, unknown> = {}) {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      ...listingOverrides,
+    });
+    return new BookingsService(prisma, notifications);
+  }
+
+  it('rejects_a_renter_booking_their_own_listing', async () => {
+    const service = arrange();
+
+    await expect(service.create('owner-1', dto)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('rejects_a_listing_that_is_not_active', async () => {
+    const service = arrange({ status: 'paused' });
+
+    await expect(service.create('renter-1', dto)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('rejects_a_start_date_in_the_past', async () => {
+    const service = arrange();
+
+    await expect(
+      service.create('renter-1', {
+        ...dto,
+        startDate: '2020-01-01',
+        endDate: '2020-01-03',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects_a_stay_longer_than_the_maximum_nights', async () => {
+    const service = arrange();
+
+    await expect(
+      service.create('renter-1', {
+        ...dto,
+        startDate: '2027-01-01',
+        endDate: '2028-06-01',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects_dates_that_are_not_date_only_strings', async () => {
+    const service = arrange();
+
+    await expect(
+      service.create('renter-1', {
+        ...dto,
+        startDate: '2027-11-01T23:59:59Z',
+        endDate: '2027-11-02T00:00:00Z',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});
+
 describe('BookingsService.create — delivery pricing', () => {
   const listing = {
     id: 'l1',
@@ -150,12 +237,13 @@ describe('BookingsService.create — delivery pricing', () => {
     country: 'ZA',
     depositAmount: new Prisma.Decimal(0),
     deletedAt: null,
+    status: 'active',
   };
   const deliveryDto = {
     listingId: 'l1',
     pickupMethod: 'delivery' as const,
-    startDate: '2026-09-01',
-    endDate: '2026-09-03',
+    startDate: '2027-09-01',
+    endDate: '2027-09-03',
   };
 
   it('adds a distance-based deliveryFee when both parties have addresses', async () => {
@@ -264,6 +352,16 @@ describe('BookingsService.updateStatus: pending -> confirmed', () => {
         data: expect.objectContaining({ depositStatus: 'held' }),
       }),
     );
+  });
+
+  it('rejects_completing_a_pending_booking', async () => {
+    const { prisma, notifications } = arrange();
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'completed' }),
+    ).rejects.toThrow(ConflictException);
+    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
   it('refuses the renter accepting their own booking', async () => {
@@ -589,5 +687,131 @@ describe('BookingsService.updateStatus authorization', () => {
     await expect(
       service.updateStatus('b1', 'owner-1', { status: 'cancelled' }),
     ).resolves.toEqual({ id: 'b1', status: 'cancelled' });
+  });
+});
+
+describe('BookingsService.updateStatus transitions', () => {
+  function arrange(
+    status: string,
+    depositStatus: string | null = null,
+    dispute: { id: string; status: string } | null = null,
+  ) {
+    const prisma = makePrisma();
+    const notifications = makeNotifications();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
+      id: 'b1',
+      requestNumber: 'GL-1',
+      listingId: 'l1',
+      renterId: 'renter-1',
+      status,
+      depositStatus,
+      depositAmount: new Prisma.Decimal(75),
+      currency: 'ZAR',
+      total: new Prisma.Decimal(150),
+      startDate: new Date('2027-09-01'),
+      endDate: new Date('2027-09-03'),
+      dispute,
+      listing: {
+        id: 'l1',
+        title: 'Canon R5',
+        ownerId: 'owner-1',
+        cancellationPolicy: 'moderate',
+      },
+    });
+    (prisma.booking.update as jest.Mock).mockResolvedValue({ id: 'b1' });
+    return { prisma, notifications };
+  }
+
+  it('rejects_moving_confirmed_booking_back_to_pending', async () => {
+    const { prisma, notifications } = arrange('confirmed', 'held');
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'renter-1', { status: 'pending' }),
+    ).rejects.toThrow(ConflictException);
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects_moving_completed_booking_back_to_pending', async () => {
+    const { prisma, notifications } = arrange('completed');
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'pending' }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('rejects_completing_a_cancelled_booking', async () => {
+    const { prisma, notifications } = arrange('cancelled');
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'completed' }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('rejects_confirming_a_completed_booking', async () => {
+    const { prisma, notifications } = arrange('completed');
+
+    const service = new BookingsService(prisma, notifications);
+    await expect(
+      service.updateStatus('b1', 'owner-1', { status: 'confirmed' }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('keeps_the_deposit_held_when_cancelling_with_an_open_dispute', async () => {
+    const { prisma, notifications } = arrange('confirmed', 'held', {
+      id: 'd1',
+      status: 'under_review',
+    });
+
+    const service = new BookingsService(prisma, notifications);
+    await service.updateStatus('b1', 'renter-1', { status: 'cancelled' });
+
+    const [args] = (prisma.booking.update as jest.Mock).mock.calls[0] as [
+      { data: Record<string, unknown> },
+    ];
+    expect(args.data.depositStatus).toBeUndefined();
+  });
+});
+
+describe('BookingsService.findById', () => {
+  const booking = {
+    id: 'b1',
+    status: 'pending',
+    renterId: 'renter-1',
+    total: new Prisma.Decimal(150),
+    startDate: new Date('2027-09-01'),
+    listing: { ownerId: 'owner-1', cancellationPolicy: 'moderate' },
+  };
+
+  function arrange() {
+    const prisma = makePrisma();
+    (prisma.booking.findUnique as jest.Mock).mockResolvedValue(booking);
+    return new BookingsService(prisma, makeNotifications());
+  }
+
+  it('forbids_a_caller_who_is_neither_renter_nor_owner', async () => {
+    const service = arrange();
+
+    await expect(service.findById('b1', 'stranger-1')).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('returns_the_booking_to_its_renter', async () => {
+    const service = arrange();
+
+    const result = await service.findById('b1', 'renter-1');
+
+    expect(result.id).toBe('b1');
+  });
+
+  it('returns_the_booking_to_the_listing_owner', async () => {
+    const service = arrange();
+
+    const result = await service.findById('b1', 'owner-1');
+
+    expect(result.id).toBe('b1');
   });
 });

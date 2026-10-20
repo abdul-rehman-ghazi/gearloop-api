@@ -106,7 +106,10 @@ export class ListingsService {
   }
 
   async pause(id: string, ownerId: string) {
-    await this.assertOwnership(id, ownerId);
+    const listing = await this.assertOwnership(id, ownerId);
+    if (listing.status !== 'active') {
+      throw new ConflictException('Only an active listing can be paused');
+    }
     return this.prisma.listing.update({
       where: { id },
       data: { status: 'paused' },
@@ -132,7 +135,10 @@ export class ListingsService {
   }
 
   async activate(id: string, ownerId: string) {
-    await this.assertOwnership(id, ownerId);
+    const listing = await this.assertOwnership(id, ownerId);
+    if (listing.status !== 'paused') {
+      throw new ConflictException('Only a paused listing can be resumed');
+    }
     return this.prisma.listing.update({
       where: { id },
       data: { status: 'active' },

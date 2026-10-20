@@ -11,6 +11,7 @@ function makePrisma() {
   return {
     listing: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     booking: {
       findFirst: jest.fn().mockResolvedValue(null),
@@ -143,5 +144,77 @@ describe('ListingsService.getBookedRanges', () => {
     await expect(service.getBookedRanges('missing')).rejects.toThrow(
       NotFoundException,
     );
+  });
+});
+
+describe('ListingsService.activate', () => {
+  it.each(['pending', 'rejected', 'active'])(
+    'rejects_activation_of_a_%s_listing',
+    async (status) => {
+      const prisma = makePrisma();
+      (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+        ...listing,
+        status,
+      });
+
+      const service = new ListingsService(prisma);
+
+      await expect(service.activate('l1', 'owner-1')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(prisma.listing.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('activates_a_paused_listing', async () => {
+    const prisma = makePrisma();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      status: 'paused',
+    });
+
+    const service = new ListingsService(prisma);
+    await service.activate('l1', 'owner-1');
+
+    expect(prisma.listing.update).toHaveBeenCalledWith({
+      where: { id: 'l1' },
+      data: { status: 'active' },
+    });
+  });
+});
+
+describe('ListingsService.pause', () => {
+  it.each(['pending', 'rejected', 'paused'])(
+    'rejects_pausing_a_%s_listing',
+    async (status) => {
+      const prisma = makePrisma();
+      (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+        ...listing,
+        status,
+      });
+
+      const service = new ListingsService(prisma);
+
+      await expect(service.pause('l1', 'owner-1')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(prisma.listing.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('pauses_an_active_listing', async () => {
+    const prisma = makePrisma();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      status: 'active',
+    });
+
+    const service = new ListingsService(prisma);
+    await service.pause('l1', 'owner-1');
+
+    expect(prisma.listing.update).toHaveBeenCalledWith({
+      where: { id: 'l1' },
+      data: { status: 'paused' },
+    });
   });
 });

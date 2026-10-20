@@ -35,8 +35,8 @@ export class BookingsController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.bookingsService.findById(id);
+  findById(@CurrentUser() user: UserAuthContext, @Param('id') id: string) {
+    return this.bookingsService.findById(id, user.userId);
   }
 
   @Patch(':id/status')

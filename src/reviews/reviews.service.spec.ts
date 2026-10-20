@@ -202,6 +202,7 @@ describe('ReviewsService.findForListing', () => {
     expect(prisma.review.findMany).toHaveBeenCalledWith({
       where,
       orderBy: { createdAt: 'desc' },
+      omit: { bookingId: true },
     });
     expect(prisma.review.aggregate).toHaveBeenCalledWith({
       where,
@@ -250,6 +251,7 @@ describe('ReviewsService.findForUser', () => {
     expect(prisma.review.findMany).toHaveBeenCalledWith({
       where: { revieweeId: 'owner-1' },
       orderBy: { createdAt: 'desc' },
+      omit: { bookingId: true },
     });
     expect(prisma.review.aggregate).toHaveBeenCalledWith({
       where: { revieweeId: 'owner-1' },

@@ -2,6 +2,7 @@ jest.mock('nodemailer', () => ({ createTransport: jest.fn() }));
 
 import { createTransport } from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
 
 function makeConfig(values: Record<string, string | undefined>) {
@@ -82,5 +83,39 @@ describe('EmailService.send', () => {
       makeConfig({ EMAIL_HOST: 'smtp.example.com' }),
     );
     await expect(service.send('a@b.c', 'S', 'B')).rejects.toThrow('SMTP down');
+  });
+
+  describe('dev log when EMAIL_HOST is unset', () => {
+    const originalEnv = process.env.NODE_ENV;
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+      jest.restoreAllMocks();
+    });
+
+    it('includes_the_body_outside_production', async () => {
+      process.env.NODE_ENV = 'development';
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+      await new EmailService(makeConfig({})).send(
+        'a@b.co',
+        'Subject',
+        'code 123456',
+      );
+
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('code 123456'));
+    });
+
+    it('omits_the_body_in_production', async () => {
+      process.env.NODE_ENV = 'production';
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+      await new EmailService(makeConfig({})).send(
+        'a@b.co',
+        'Subject',
+        'code 123456',
+      );
+
+      expect(log).toHaveBeenCalledWith(expect.not.stringContaining('123456'));
+    });
   });
 });

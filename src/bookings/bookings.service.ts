@@ -22,6 +22,17 @@ import type {
 
 const RENTER_SELECT = { id: true, name: true, initials: true } as const;
 
+const MS_PER_DAY = 86_400_000;
+const MAX_BOOKING_NIGHTS = 365;
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const ALLOWED_TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+};
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -33,14 +44,26 @@ export class BookingsService {
     const listing = await this.prisma.listing.findUnique({
       where: { id: dto.listingId },
     });
-    if (!listing || listing.deletedAt) {
+    if (!listing || listing.deletedAt || listing.status !== 'active') {
       throw new NotFoundException('Listing not found');
     }
+    if (listing.ownerId === renterId) {
+      throw new ForbiddenException('You cannot book your own listing');
+    }
 
-    const start = new Date(dto.startDate);
-    const end = new Date(dto.endDate);
+    const start = this.parseDateOnly(dto.startDate, 'startDate');
+    const end = this.parseDateOnly(dto.endDate, 'endDate');
     if (end <= start) {
       throw new BadRequestException('endDate must be after startDate');
+    }
+    if (start < this.startOfTodayUtc()) {
+      throw new BadRequestException('startDate cannot be in the past');
+    }
+    const nights = Math.round((end.getTime() - start.getTime()) / MS_PER_DAY);
+    if (nights > MAX_BOOKING_NIGHTS) {
+      throw new BadRequestException(
+        `A booking cannot exceed ${MAX_BOOKING_NIGHTS} nights`,
+      );
     }
 
     // Application-level pre-check against confirmed bookings only, matching
@@ -49,7 +72,6 @@ export class BookingsService {
     // intentional, not a bug.
     await this.assertNoActiveOverlap(dto.listingId, start, end);
 
-    const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000);
     const {
       subtotal,
       serviceFee,
@@ -112,6 +134,23 @@ export class BookingsService {
     }
   }
 
+  // Booking columns are @db.Date, so a timestamp's time-of-day would skew the
+  // night count against what is actually stored.
+  private parseDateOnly(value: string, field: string): Date {
+    const parsed = new Date(value);
+    if (!DATE_ONLY_PATTERN.test(value) || Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException(`${field} must be a YYYY-MM-DD date`);
+    }
+    return parsed;
+  }
+
+  private startOfTodayUtc(): Date {
+    const now = new Date();
+    return new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+  }
+
   // Same recomputation as PricingController#resolveDeliveryFee — kept
   // separate rather than shared because the two callers have different
   // inputs (a raw ownerId/renterId pair here vs. an authenticated caller +
@@ -169,8 +208,11 @@ export class BookingsService {
     return booking;
   }
 
-  async findById(id: string) {
+  async findById(id: string, userId: string) {
     const booking = await this.getBookingOrThrow(id);
+    if (booking.renterId !== userId && booking.listing.ownerId !== userId) {
+      throw new ForbiddenException('You are not a party to this booking');
+    }
     return { ...booking, refundQuote: this.quoteRefund(booking) };
   }
 
@@ -228,26 +270,17 @@ export class BookingsService {
       throw new ForbiddenException('Only the owner can complete a booking');
     }
 
-    // A completed or already-cancelled booking has no further transition —
-    // without this, re-cancelling a cancelled row (or cancelling a
-    // completed one) would refund/release money a second time.
-    if (
-      dto.status === 'cancelled' &&
-      (existing.status === 'completed' || existing.status === 'cancelled')
-    ) {
+    // Without an explicit table, a party could walk a booking back to
+    // pending and cancel it for a full refund and a released deposit.
+    if (!ALLOWED_TRANSITIONS[existing.status].includes(dto.status)) {
       throw new ConflictException(
-        `Cannot cancel a booking that is already ${existing.status}`,
+        `Cannot change a booking from ${existing.status} to ${dto.status}`,
       );
     }
 
     if (dto.status === 'confirmed') {
       if (existing.listing.ownerId !== userId) {
         throw new ForbiddenException('Only the owner can accept a booking');
-      }
-      if (existing.status !== 'pending') {
-        throw new ConflictException(
-          `Cannot accept a booking that is ${existing.status}`,
-        );
       }
       await this.assertNoActiveOverlap(
         existing.listingId,
@@ -296,11 +329,14 @@ export class BookingsService {
         : undefined;
 
     // Ruling 7: "clean return" == completed with no dispute on the booking.
-    // A cancellation always releases. Anything else leaves the deposit
-    // alone.
+    // A cancellation releases unless a dispute is still open, since the
+    // deposit may be the subject of a damage claim. Anything else leaves
+    // the deposit alone.
+    const hasOpenDispute =
+      !!existing.dispute && existing.dispute.status !== 'resolved';
     const releasesDeposit =
       existing.depositStatus === 'held' &&
-      (dto.status === 'cancelled' ||
+      ((dto.status === 'cancelled' && !hasOpenDispute) ||
         (dto.status === 'completed' && !existing.dispute));
 
     try {

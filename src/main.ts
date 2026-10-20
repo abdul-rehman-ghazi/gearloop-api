@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Behind Render's proxy; without this the throttler keys on the proxy IP.
+  app.set('trust proxy', 1);
   app.use(json({ limit: '10mb' }));
   app.useGlobalPipes(
     new ValidationPipe({

@@ -17,7 +17,7 @@ export class EmailService {
     // No mail vendor configured (the dev default) — log and return rather
     // than throwing, so notification writes never depend on SMTP existing.
     if (!host) {
-      this.logger.log(`[EmailService] would send to ${to}: ${subject}`);
+      this.logger.log(this.describeSkippedSend(to, subject, body));
       return;
     }
 
@@ -36,5 +36,13 @@ export class EmailService {
       subject,
       text: body,
     });
+  }
+
+  // The body is included outside production only so devs can read OTP codes;
+  // in production it must never reach the logs.
+  private describeSkippedSend(to: string, subject: string, body: string) {
+    const summary = `[EmailService] would send to ${to}: ${subject}`;
+    if (process.env.NODE_ENV === 'production') return summary;
+    return `${summary}\n${body}`;
   }
 }
