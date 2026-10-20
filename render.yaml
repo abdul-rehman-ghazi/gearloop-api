@@ -14,8 +14,10 @@ services:
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:
+      # Must ship npm 11 like local dev: npm 11 omits optional peer deps from
+      # package-lock.json, and npm 10's `npm ci` then rejects it as out of sync.
       - key: NODE_VERSION
-        value: "22"
+        value: "24"
       - key: NODE_ENV
         value: production
       # Neon *direct* connection string (not the -pooler host): prisma migrate
