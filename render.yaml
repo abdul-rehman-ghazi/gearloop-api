@@ -6,7 +6,8 @@ services:
     # Keep in the same region as the Neon database and the Vercel functions
     # (sin1); every page render makes several API → DB round trips.
     region: singapore
-    branch: master
+    # Deploys only what ../publish.sh pushes here; pushing master deploys nothing.
+    branch: production
     # Free plan has no pre-deploy step, so migrations run during the build.
     # --include=dev is required: NODE_ENV=production would otherwise skip the
     # prisma and nest CLIs, which are devDependencies.
