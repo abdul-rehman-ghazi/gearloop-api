@@ -12,12 +12,14 @@ import { SearchListingsDto } from './dto/search-listings.dto';
 import { CreateBlackoutDto } from './dto/create-blackout.dto';
 import { Prisma } from '../../generated/prisma/client';
 import { blockingBooking } from '../bookings/booking-availability.util';
+import { assertDepositWithinCap } from './deposit-cap.util';
 
 @Injectable()
 export class ListingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(ownerId: string, dto: CreateListingDto) {
+    assertDepositWithinCap(dto.depositAmount ?? 0, dto.pricePerDay);
     const listing = await this.prisma.listing.create({
       data: { ...dto, ownerId },
     });
@@ -101,7 +103,12 @@ export class ListingsService {
   }
 
   async update(id: string, ownerId: string, dto: UpdateListingDto) {
-    await this.assertOwnership(id, ownerId);
+    const listing = await this.assertOwnership(id, ownerId);
+    // A partial update is checked against the stored values it leaves alone.
+    assertDepositWithinCap(
+      dto.depositAmount ?? Number(listing.depositAmount),
+      dto.pricePerDay ?? Number(listing.pricePerDay),
+    );
     return this.prisma.listing.update({ where: { id }, data: dto });
   }
 

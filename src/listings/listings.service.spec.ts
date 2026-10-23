@@ -11,6 +11,7 @@ function makePrisma() {
   return {
     listing: {
       findUnique: jest.fn(),
+      create: jest.fn(),
       update: jest.fn(),
     },
     booking: {
@@ -215,6 +216,58 @@ describe('ListingsService.pause', () => {
     expect(prisma.listing.update).toHaveBeenCalledWith({
       where: { id: 'l1' },
       data: { status: 'paused' },
+    });
+  });
+});
+
+describe('ListingsService deposit cap', () => {
+  const createDto = {
+    title: 'Sony A7 IV',
+    category: 'Cameras' as const,
+    country: 'PK',
+    pricePerDay: 7_500,
+    description: 'Full-frame body',
+  };
+
+  it('create_rejects_a_deposit_above_100_times_the_daily_price', async () => {
+    const prisma = makePrisma();
+    const service = new ListingsService(prisma);
+
+    await expect(
+      service.create('owner-1', { ...createDto, depositAmount: 750_001 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.listing.create).not.toHaveBeenCalled();
+  });
+
+  it('update_checks_a_new_deposit_against_the_stored_daily_price', async () => {
+    const prisma = makePrisma();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      pricePerDay: '25.00',
+      depositAmount: '0.00',
+    });
+    const service = new ListingsService(prisma);
+
+    await expect(
+      service.update('l1', 'owner-1', { depositAmount: 2_501 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.listing.update).not.toHaveBeenCalled();
+  });
+
+  it('update_accepts_a_deposit_within_the_cap', async () => {
+    const prisma = makePrisma();
+    (prisma.listing.findUnique as jest.Mock).mockResolvedValue({
+      ...listing,
+      pricePerDay: '7500.00',
+      depositAmount: '0.00',
+    });
+    const service = new ListingsService(prisma);
+
+    await service.update('l1', 'owner-1', { depositAmount: 75_000 });
+
+    expect(prisma.listing.update).toHaveBeenCalledWith({
+      where: { id: 'l1' },
+      data: { depositAmount: 75_000 },
     });
   });
 });
