@@ -8,7 +8,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -35,13 +34,12 @@ export class CreateListingDto {
   @IsPositive()
   pricePerDay: number;
 
-  // Optional; absent means 0, i.e. this listing takes no deposit. The Max is
-  // a fat-finger guard, not a business rule — a mistyped 100000 would place
-  // a five-figure hold on a real renter's card.
+  // Optional; absent means 0, i.e. this listing takes no deposit. The upper
+  // bound depends on pricePerDay, so it is checked in ListingsService (see
+  // deposit-cap.util.ts) rather than with a flat @Max here.
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  @Max(10000)
   depositAmount?: number;
 
   // Absent means the model default (`moderate`).
